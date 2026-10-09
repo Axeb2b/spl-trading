@@ -32,7 +32,7 @@ A full Next.js 16 clone of **sutra-reg.org** (a "SPL TRADING" / trading-cabinet 
 - Live site: `https://sutra-reg.org`
 - Login endpoint: `POST /api/auth/login` body `{"email","password","token":""}` → sets HttpOnly `predeposit_session` JWT
 - Profile: `GET /api/auth/me`
-- Account: "Gourav", status `INTEGRATION`, non-admin, `canAccessAdminUi: false`
+- Account: "[Redacted]", status `INTEGRATION`, non-admin, `canAccessAdminUi: false`
 - Captured SSR HTML of `/`, `/payins`, `/payouts`, `/accounts`, `/onboarding`, `/report`, `/admin` (302) into `docs/research/sutra-reg/inside/`
 - Route map, shell structure, per-page copy, deposit modal, deviations → `docs/research/sutra-reg/inside-brief.md`
 - Auth pages brief → `docs/research/sutra-reg/page-brief.md`
