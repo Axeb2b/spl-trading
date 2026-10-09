@@ -119,7 +119,7 @@ export function SignUpFlow() {
     >
       <AuthBanner kind={banner?.kind ?? null} title={banner?.title} text={banner?.text} />
       <form
-        className="auth-form-stack"
+        className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           submit();

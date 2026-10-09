@@ -62,7 +62,10 @@ export function ThemeToggle({ className }: { className?: string } = {}) {
   return (
     <button
       type="button"
-      className={className ?? "auth-theme-toggle"}
+      className={
+        className ??
+        "grid size-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
+      }
       title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
       aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
       onClick={toggleTheme}

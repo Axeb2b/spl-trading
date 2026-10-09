@@ -98,7 +98,7 @@ export function SignInForm({ headLinkText, headLinkCta, headLinkTo }: SignInForm
     >
       <AuthBanner kind={banner?.kind ?? null} title={banner?.title} text={banner?.text} />
       <form
-        className="auth-form-stack"
+        className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
@@ -127,8 +127,13 @@ export function SignInForm({ headLinkText, headLinkCta, headLinkTo }: SignInForm
             setErrors((current) => ({ ...current, password: undefined }));
           }}
         />
-        <div className="auth-forgot">
-          <a href="/auth/forgot-password">Forgot password?</a>
+        <div className="flex justify-end text-sm">
+          <a
+            href="/auth/forgot-password"
+            className="font-medium text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline dark:text-slate-400 dark:hover:text-slate-100"
+          >
+            Forgot password?
+          </a>
         </div>
         <AuthActions
           primaryLabel="Sign In"

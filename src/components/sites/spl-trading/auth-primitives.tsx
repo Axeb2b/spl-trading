@@ -9,6 +9,17 @@ import {
   EyeIcon,
 } from "./icons";
 
+const INPUT_BASE =
+  "h-11 w-full rounded-lg border bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500";
+const INPUT_IDLE =
+  "border-slate-200 focus:border-slate-400 focus:ring-slate-900/5 dark:border-slate-700 dark:focus:border-slate-500";
+const INPUT_ERROR =
+  "border-red-300 focus:border-red-400 focus:ring-red-500/10 dark:border-red-800 dark:focus:border-red-600";
+const INPUT_OK =
+  "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-500/10 dark:border-emerald-800";
+
+const LABEL = "text-sm font-medium text-slate-700 dark:text-slate-300";
+
 export function AuthField({
   label,
   value,
@@ -35,25 +46,31 @@ export function AuthField({
   onChange: (value: string) => void;
 }) {
   const errorText = error?.trim() ? error : "";
+  const state = errorText ? INPUT_ERROR : ok ? INPUT_OK : INPUT_IDLE;
 
   return (
-    <div className="auth-field">
-      <label className="auth-field__label">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className={LABEL}>{label}</label>
       <input
         value={value}
         type={type}
         placeholder={placeholder}
         disabled={disabled}
         autoComplete={autoComplete}
-        className={`auth-field__input${error ? " auth-field__input--error" : ""}${
-          ok && !error ? " auth-field__input--ok" : ""
-        }`}
+        aria-invalid={errorText ? true : undefined}
+        className={`${INPUT_BASE} ${state}`}
         onChange={(event) => onChange(event.target.value)}
       />
       {errorText ? (
-        <p className="auth-field__error">{errorText}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{errorText}</p>
       ) : hint ? (
-        <p className={`auth-field__hint${hintError ? " auth-field__hint--error" : ""}`}>{hint}</p>
+        <p
+          className={`text-xs ${
+            hintError ? "text-red-600 dark:text-red-400" : "text-slate-500"
+          }`}
+        >
+          {hint}
+        </p>
       ) : null}
     </div>
   );
@@ -84,36 +101,37 @@ export function AuthPasswordField({
 }) {
   const [visible, setVisible] = useState(false);
   const errorText = error?.trim() ? error : "";
-  const hasError = Boolean(error || invalid);
+  const hasError = Boolean(errorText || invalid);
+  const state = hasError ? INPUT_ERROR : ok ? INPUT_OK : INPUT_IDLE;
 
   return (
-    <div className="auth-field">
-      <label className="auth-field__label">{label}</label>
-      <div className="auth-field__password-wrap">
+    <div className="flex flex-col gap-1.5">
+      <label className={LABEL}>{label}</label>
+      <div className="relative">
         <input
           value={value}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete={autoComplete}
-          className={`auth-field__input auth-field__input--password${
-            hasError ? " auth-field__input--error" : ""
-          }${ok && !hasError ? " auth-field__input--ok" : ""}`}
+          aria-invalid={hasError ? true : undefined}
+          className={`${INPUT_BASE} ${state} pr-11`}
           onChange={(event) => onChange(event.target.value)}
         />
         <button
           type="button"
-          className="auth-field__eye"
           disabled={disabled}
+          aria-label={visible ? "Hide password" : "Show password"}
           onClick={() => setVisible((current) => !current)}
+          className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
         >
           <EyeIcon />
         </button>
       </div>
       {errorText ? (
-        <p className="auth-field__error">{errorText}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{errorText}</p>
       ) : hint ? (
-        <p className="auth-field__hint">{hint}</p>
+        <p className="text-xs text-slate-500">{hint}</p>
       ) : null}
     </div>
   );
@@ -139,26 +157,25 @@ export function AuthActions({
   onSecondary?: () => void;
 }) {
   return (
-    <div className="auth-actions">
+    <div className="flex flex-col gap-2.5">
       <button
         type="button"
-        className={`auth-btn auth-btn--primary${loading ? " auth-btn--loading" : ""}${
-          disabled || loading ? " auth-btn--disabled" : ""
-        }`}
         disabled={disabled || loading}
         onClick={onPrimary}
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
       >
-        {loading ? <span className="auth-btn__spinner" /> : null}
+        {loading ? <Spinner /> : null}
         <span>{loading && loadingLabel ? loadingLabel : primaryLabel}</span>
       </button>
+
       {secondaryLabel ? (
         <button
           type="button"
-          className="auth-btn auth-btn--secondary"
           disabled={secondaryLoading}
           onClick={onSecondary}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
         >
-          {secondaryLoading ? <span className="auth-btn__spinner auth-btn__spinner--secondary" /> : null}
+          {secondaryLoading ? <Spinner /> : null}
           <span>{secondaryLabel}</span>
         </button>
       ) : null}
@@ -166,7 +183,24 @@ export function AuthActions({
   );
 }
 
+function Spinner() {
+  return (
+    <span
+      aria-hidden
+      className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent opacity-70"
+    />
+  );
+}
+
 export type BannerKind = "error" | "warn" | "info" | "ok";
+
+const BANNER_STYLE: Record<BannerKind, string> = {
+  error:
+    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200",
+  warn: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  info: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200",
+  ok: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
+};
 
 export function AuthBanner({
   kind,
@@ -180,8 +214,11 @@ export function AuthBanner({
   if (!kind) return null;
 
   return (
-    <div className={`auth-banner auth-banner--${kind}`}>
-      <span className="auth-banner__icon" aria-hidden="true">
+    <div
+      role={kind === "error" ? "alert" : "status"}
+      className={`mb-5 flex items-start gap-3 rounded-lg border px-3.5 py-3 text-sm ${BANNER_STYLE[kind]}`}
+    >
+      <span className="mt-0.5 shrink-0" aria-hidden="true">
         {kind === "error" ? (
           <BannerErrorIcon />
         ) : kind === "warn" ? (
@@ -192,9 +229,9 @@ export function AuthBanner({
           <BannerOkIcon />
         )}
       </span>
-      <div>
-        {title ? <div className="auth-banner__title">{title}</div> : null}
-        {text ? <div className="auth-banner__text">{text}</div> : null}
+      <div className="min-w-0">
+        {title ? <p className="font-medium">{title}</p> : null}
+        {text ? <p className="mt-0.5 opacity-90">{text}</p> : null}
       </div>
     </div>
   );
@@ -241,22 +278,27 @@ export function OtpField({
   }
 
   return (
-    <div className={`auth-otp${error ? " auth-otp--error" : ""}`}>
+    <div className="flex gap-2">
       {Array.from({ length }, (_, index) => (
         <input
           key={`${id}-${index}`}
           ref={(element) => {
             inputs.current[index] = element;
           }}
-          className="auth-otp__input"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={length}
           disabled={disabled}
           value={value[index] ?? ""}
           aria-label={`Digit ${index + 1}`}
+          aria-invalid={error ? true : undefined}
           onChange={(event) => handleInput(index, event.target.value)}
           onKeyDown={(event) => handleKeyDown(index, event)}
+          className={`h-12 w-full min-w-0 rounded-lg border bg-white text-center text-lg font-medium text-slate-900 outline-none transition focus:ring-2 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-50 ${
+            error
+              ? "border-red-300 focus:border-red-400 focus:ring-red-500/10 dark:border-red-800"
+              : "border-slate-200 focus:border-slate-400 focus:ring-slate-900/5 dark:border-slate-700 dark:focus:border-slate-500"
+          }`}
         />
       ))}
     </div>

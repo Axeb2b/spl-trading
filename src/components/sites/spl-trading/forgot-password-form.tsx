@@ -45,7 +45,7 @@ export function ForgotPasswordForm() {
       footLinkTo="/auth/sign-in"
     >
       <form
-        className="auth-form-stack"
+        className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
