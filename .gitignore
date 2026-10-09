@@ -47,3 +47,17 @@ next-env.d.ts
 
 # Local temp files
 temp/
+
+# SQLite data (never commit)
+/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Captured research artifacts from the third-party site (never commit).
+# These contain authenticated page captures including a real account holder's
+# name, email address and account metadata. See HANDOFF.md.
+/docs/research/
+
+# Agent session scratch space
+/.tmp/

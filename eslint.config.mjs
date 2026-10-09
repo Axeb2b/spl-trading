@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Downloaded source bundles/scraping evidence, not project code:
+    "docs/research/**",
   ]),
 ]);
 

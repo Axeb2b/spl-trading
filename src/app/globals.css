@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -126,5 +126,120 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Dark-mode surface mapping for the captured cabinet markup.
+ *
+ * The cabinet was cloned from a compiled stylesheet, so its Tailwind utilities
+ * (bg-white, text-slate-500, border-slate-200, ...) are baked in as literal
+ * colors and cannot respond to a variant. This layer remaps the surface
+ * utilities the cabinet actually uses when .dark is active, so the original
+ * markup themes correctly without rewriting every component.
+ */
+@layer utilities {
+  .dark .bg-white {
+    background-color: #111a26;
+  }
+  .dark .bg-slate-50 {
+    background-color: #0b1220;
+  }
+  .dark .bg-slate-100 {
+    background-color: #182234;
+  }
+  .dark .bg-slate-200 {
+    background-color: #223047;
+  }
+  .dark .bg-slate-50\/ {
+    background-color: rgb(11 18 32 / 0.9);
+  }
+  .dark .text-slate-900 {
+    color: #e8eef8;
+  }
+  .dark .text-slate-800 {
+    color: #dbe4f1;
+  }
+  .dark .text-slate-700 {
+    color: #c3cfe0;
+  }
+  .dark .text-slate-600 {
+    color: #a4b3c8;
+  }
+  .dark .text-slate-500 {
+    color: #8b9cb4;
+  }
+  .dark .text-slate-400 {
+    color: #74849b;
+  }
+  .dark .text-gray-400 {
+    color: #74849b;
+  }
+  .dark .text-gray-500 {
+    color: #8b9cb4;
+  }
+  .dark .text-gray-600 {
+    color: #a4b3c8;
+  }
+  .dark .border-slate-100 {
+    border-color: #223047;
+  }
+  .dark .border-slate-200 {
+    border-color: #263449;
+  }
+  .dark .border-slate-300 {
+    border-color: #33425c;
+  }
+  .dark .border-gray-200 {
+    border-color: #263449;
+  }
+  .dark .divide-slate-100 > :not(:last-child) {
+    border-color: #223047;
+  }
+  .dark .bg-blue-50 {
+    background-color: #10233f;
+  }
+  .dark .text-blue-700 {
+    color: #7db0ff;
+  }
+  .dark .bg-emerald-50 {
+    background-color: #0f2a1f;
+  }
+  .dark .text-emerald-600,
+  .dark .text-emerald-700 {
+    color: #5ed9a4;
+  }
+  .dark .bg-amber-50 {
+    background-color: #2c2313;
+  }
+  .dark .text-amber-700,
+  .dark .text-amber-800 {
+    color: #f0c274;
+  }
+  .dark .bg-red-50 {
+    background-color: #2c1618;
+  }
+  .dark .text-red-600,
+  .dark .text-red-700 {
+    color: #f08a90;
+  }
+  /* Chrome surfaces from the captured header/navbar */
+  .dark .header {
+    background-color: #111a26;
+    border-color: #263449;
+  }
+  .dark .navbar {
+    background-color: #111a26;
+    border-color: #263449;
+  }
+  .dark .onboarding-banner {
+    background: linear-gradient(90deg, #12325c, #0e2444);
+  }
+  .dark .demo-notes {
+    background-color: #111a26;
+    border-color: #263449;
+  }
+  .dark .header__control {
+    color: #c3cfe0;
   }
 }
