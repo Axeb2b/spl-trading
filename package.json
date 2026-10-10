@@ -34,7 +34,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare build && node scripts/patch-load-manifest.mjs && opennextjs-cloudflare deploy",
+    "deploy:local": "opennextjs-cloudflare build && node scripts/patch-load-manifest.mjs && npx wrangler deploy --temporary",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "seed:admin": "node scripts/seed-admin.mjs"
   },
