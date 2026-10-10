@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { SEO } from "@/components/sites/spl-trading/public/seo";
 import { PublicPageIntro, PublicShell } from "@/components/sites/spl-trading/public/public-shell";
 import { SupportSections } from "@/components/sites/spl-trading/public/support-content";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description:
-    "How to contact SPL Trading support: in-app support from your cabinet and the Telegram channel opened there. No phone numbers or email addresses are published.",
-};
+export const metadata: Metadata = SEO.default({
+      title: "Contact",
+      description: "How to contact SPL Trading support: in-app support from your cabinet and the Telegram channel opened there. No phone numbers or email addresses are published.",
+      path: "/contact",
+    });
 
 export default function ContactPage() {
   return (

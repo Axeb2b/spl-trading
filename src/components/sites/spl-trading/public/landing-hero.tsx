@@ -19,8 +19,8 @@ export function LandingHero() {
     >
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className={`${styles.dots} absolute inset-0`} />
-        <div className="absolute -left-24 -top-32 size-[30rem] rounded-full bg-blue-500/25 blur-3xl" />
-        <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute -left-24 -top-32 size-[30rem] rounded-full bg-blue-500/25 blur-3xl pulse" />
+        <div className="absolute -right-16 bottom-0 size-80 rounded-full bg-emerald-400/10 blur-3xl pulse" />
       </div>
 
       <div className="relative z-[2] mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16 lg:py-28">

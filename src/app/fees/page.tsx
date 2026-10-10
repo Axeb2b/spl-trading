@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { SEO } from "@/components/sites/spl-trading/public/seo";
 import Link from "next/link";
 import { PublicPageIntro, PublicSection, PublicShell } from "@/components/sites/spl-trading/public/public-shell";
 
-export const metadata: Metadata = {
-  title: "Fees & limits",
-  description:
-    "Published fees and limits for SPL Trading: withdrawal fee, deposit minimum and maximum, payout minimum and deposit order expiry.",
-};
+export const metadata: Metadata = SEO.default({
+      title: "Fees & limits",
+      description: "Published fees and limits for SPL Trading: withdrawal fee, deposit minimum and maximum, payout minimum and deposit order expiry.",
+      path: "/fees",
+    });
 
 type FeeRow = { item: string; amount: string; note: string };
 

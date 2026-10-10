@@ -1,14 +1,15 @@
 // <!-- Draft policy — legal review required before production launch. -->
 import type { Metadata } from "next";
+import { SEO } from "@/components/sites/spl-trading/public/seo";
 import Link from "next/link";
 import { LegalDoc, type LegalSection } from "@/components/sites/spl-trading/public/legal-doc";
 import { PublicShell } from "@/components/sites/spl-trading/public/public-shell";
 
-export const metadata: Metadata = {
-  title: "Risk disclosure",
-  description:
-    "The risks of using SPL Trading: digital-asset volatility, no guaranteed returns, deposit and payout processing, and money-movement features that can be disabled.",
-};
+export const metadata: Metadata = SEO.default({
+      title: "Risk disclosure",
+      description: "The risks of using SPL Trading: digital-asset volatility, no guaranteed returns, deposit and payout processing, and money-movement features that can be disabled.",
+      path: "/risk",
+    });
 
 const INLINE_LINK = "font-medium text-blue-600 underline-offset-4 hover:underline dark:text-blue-400";
 

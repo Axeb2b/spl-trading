@@ -1,14 +1,15 @@
 // <!-- Draft policy — legal review required before production launch. -->
 import type { Metadata } from "next";
+import { SEO } from "@/components/sites/spl-trading/public/seo";
 import Link from "next/link";
 import { LegalDoc, type LegalSection } from "@/components/sites/spl-trading/public/legal-doc";
 import { PublicShell } from "@/components/sites/spl-trading/public/public-shell";
 
-export const metadata: Metadata = {
-  title: "Privacy policy",
-  description:
-    "How SPL Trading collects and uses account details, ledger and transaction records, and the session cookie — and what you can ask for.",
-};
+export const metadata: Metadata = SEO.default({
+      title: "Privacy policy",
+      description: "How SPL Trading collects and uses account details, ledger and transaction records, and the session cookie — and what you can ask for.",
+      path: "/privacy",
+    });
 
 const SECTIONS: LegalSection[] = [
   {

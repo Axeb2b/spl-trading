@@ -4,6 +4,7 @@ import { DashboardCards, type DashboardSummary } from "@/components/sites/spl-tr
 import { HomeStats, type HomeCounts } from "@/components/sites/spl-trading/cabinet/home-stats";
 import { Landing } from "@/components/sites/spl-trading/public/landing";
 import { PublicShell } from "@/components/sites/spl-trading/public/public-shell";
+import { SEO } from "@/components/sites/spl-trading/public/seo";
 import { requirePageUser } from "@/lib/page-user";
 import { getUserCashBalanceCents } from "@/lib/ledger";
 import { listDepositOrders } from "@/lib/deposits";
@@ -19,11 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  return {
+  return SEO.default({
     title: "Deposits, payouts and reports in one cabinet",
     description:
       "SPL Trading is a cabinet for funding an account with USDT, paying out to accounts you control, and reading every movement. No promised returns.",
-  };
+    path: "/",
+  });
 }
 
 export default async function Home() {
