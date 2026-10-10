@@ -34,7 +34,7 @@ db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
 
 // Ensure schema exists. Mirrors MIGRATION_FILES in src/lib/db.ts (source of truth) — keep in sync.
-const MIGRATION_FILES = ["001_init.sql", "002_referral_rewards_unique.sql"];
+const MIGRATION_FILES = ["001_init.sql", "002_referral_rewards_unique.sql", "003_trading.sql"];
 const migrationsDir = join(process.cwd(), "src", "lib", "migrations");
 db.exec("CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))");
 const applied = new Set(db.prepare("SELECT name FROM _migrations").all().map((r) => String(r.name)));
