@@ -25,7 +25,7 @@ export default async function ReportPage() {
   const user = await requirePageUser();
   if (!user) redirect("/auth/sign-in");
 
-  const entries = getUserLedgerEntries(user.id, 200) as RawLedgerEntry[];
+  const entries = (await getUserLedgerEntries(user.id, 200)) as RawLedgerEntry[];
 
   const rows: LedgerRow[] = entries.map((entry) => ({
     reference: entry.provider_ref ?? entry.id.slice(0, 8).toUpperCase(),

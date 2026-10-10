@@ -5,21 +5,21 @@ import { isFeatureEnabled, getDepositMinCents, getDepositMaxCents } from "@/lib/
 import { getPaymentDestination } from "@/lib/payment-destination";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
   const destination = await getPaymentDestination();
   return NextResponse.json({
-    deposits: listDepositOrders(auth.user.id),
+    deposits: await listDepositOrders(auth.user.id),
     destination,
-    limits: { minCents: getDepositMinCents(), maxCents: getDepositMaxCents() },
+    limits: { minCents: await getDepositMinCents(), maxCents: await getDepositMaxCents() },
   });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
 
-  if (!isFeatureEnabled("deposits_enabled")) {
+  if (!(await isFeatureEnabled("deposits_enabled"))) {
     return NextResponse.json(
       { error: "Deposits are currently disabled. Contact support." },
       { status: 403 },
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const order = createDepositOrder({
+    const order = await createDepositOrder({
       userId: auth.user.id,
       amountCents: body.amountCents!,
       currency: body.currency,

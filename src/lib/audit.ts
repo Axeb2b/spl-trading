@@ -1,14 +1,14 @@
 import { newId, nowIso, execute } from "./db";
 
-export function audit(input: {
+export async function audit(input: {
   actorId: string | null;
   actorRole: string;
   action: string;
   targetType?: string;
   targetId?: string;
   metadata?: Record<string, unknown>;
-}): void {
-  execute(
+}): Promise<void> {
+  await execute(
     `INSERT INTO audit_logs (id, actor_id, actor_role, action, target_type, target_id, metadata, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [

@@ -1,5 +1,5 @@
-import { newId, nowIso, queryOne, queryAll, execute, withTransaction } from "./db";
-import { postTransaction, LedgerError } from "./ledger";
+import { newId, nowIso, queryOne, queryAll, execute, runBatch } from "./db";
+import { entryStatements, transactionStatement } from "./ledger";
 
 export type ReferralReward = {
   id: string;
@@ -14,62 +14,83 @@ export type ReferralReward = {
 
 const REFERRAL_REWARD_CENTS = 500_00;
 
-export function recordQualifyingDeposit(referredUserId: string): void {
-  const user = queryOne<{ id: string; referred_by: string | null }>("SELECT id, referred_by FROM users WHERE id = ?", [referredUserId]);
+/**
+ * Create the pending reward for a referred user's first credited deposit.
+ * The UNIQUE index on referral_rewards(referred_user_id, qualifying_event)
+ * (migration 002) plus ON CONFLICT DO NOTHING makes the insert race-proof:
+ * concurrent credits of the same deposit produce exactly one reward row.
+ */
+export async function recordQualifyingDeposit(referredUserId: string): Promise<void> {
+  const user = await queryOne<{ id: string; referred_by: string | null }>(
+    "SELECT id, referred_by FROM users WHERE id = ?",
+    [referredUserId],
+  );
   if (!user?.referred_by) return;
   if (user.referred_by === referredUserId) return;
 
-  const existing = queryOne<{ id: string }>(
-    "SELECT id FROM referral_rewards WHERE referred_user_id = ? AND qualifying_event = 'deposit_credited'",
-    [referredUserId],
-  );
-  if (existing) return;
-
-  execute(
+  await execute(
     `INSERT INTO referral_rewards (id, referrer_id, referred_user_id, qualifying_event, status, reward_cents, created_at)
-     VALUES (?, ?, ?, 'deposit_credited', 'pending', ?, ?)`,
+     VALUES (?, ?, ?, 'deposit_credited', 'pending', ?, ?)
+     ON CONFLICT(referred_user_id, qualifying_event) DO NOTHING`,
     [newId(), user.referred_by, referredUserId, REFERRAL_REWARD_CENTS, nowIso()],
   );
 }
 
-export function approveAndPayReward(rewardId: string): { alreadyPaid: boolean } {
-  return withTransaction(() => {
-    const reward = getRewardById(rewardId);
-    if (!reward) return { alreadyPaid: false };
-    if (reward.status === "paid") return { alreadyPaid: true };
-    if (reward.status !== "pending") return { alreadyPaid: false };
+/**
+ * Pay a pending reward: the `status = 'pending'` guard makes the transition
+ * atomic with the ledger post inside one batch, and the reward ledger key is
+ * derived from the reward id so a concurrent duplicate can never double-pay.
+ */
+export async function approveAndPayReward(rewardId: string): Promise<{ alreadyPaid: boolean }> {
+  const reward = await getRewardById(rewardId);
+  if (!reward) return { alreadyPaid: false };
+  if (reward.status === "paid") return { alreadyPaid: true };
+  if (reward.status !== "pending") return { alreadyPaid: false };
 
-    const now = nowIso();
-    execute("UPDATE referral_rewards SET status = 'paid', paid_at = ? WHERE id = ?", [now, rewardId]);
-
-    try {
-      postTransaction({
+  const now = nowIso();
+  const txnId = newId();
+  const [claim] = await runBatch([
+    { sql: "UPDATE referral_rewards SET status = 'paid', paid_at = ? WHERE id = ? AND status = 'pending'", params: [now, rewardId] },
+    transactionStatement(
+      {
+        id: txnId,
         idempotencyKey: `referral-reward-${rewardId}`,
         type: "referral_reward",
-        description: `Referral reward for qualifying deposit`,
-        entries: [
-          { userId: null, account: "revenue_fee", direction: "debit", amountCents: reward.rewardCents },
-          { userId: reward.referrerId, account: "liability_user_cash", direction: "credit", amountCents: reward.rewardCents },
-        ],
-      });
-    } catch (err) {
-      if (err instanceof LedgerError && err.code === "DUPLICATE_KEY") return { alreadyPaid: true };
-      throw err;
-    }
+        description: "Referral reward for qualifying deposit",
+        provider: null,
+        providerRef: null,
+        createdAt: now,
+      },
+      { sql: "SELECT 1 FROM referral_rewards WHERE id = ? AND status = 'paid' AND paid_at = ?", params: [rewardId, now] },
+    ),
+    ...entryStatements(
+      txnId,
+      [
+        { userId: null, account: "revenue_fee", direction: "debit", amountCents: reward.rewardCents },
+        { userId: reward.referrerId, account: "liability_user_cash", direction: "credit", amountCents: reward.rewardCents },
+      ],
+      now,
+    ),
+  ]);
+
+  if (claim.changes === 0) {
+    const current = await getRewardById(rewardId);
+    if (current?.status === "paid") return { alreadyPaid: true };
     return { alreadyPaid: false };
-  });
+  }
+  return { alreadyPaid: false };
 }
 
-export function listRewardsForUser(userId: string): ReferralReward[] {
-  const rows = queryAll<Record<string, unknown>>(
+export async function listRewardsForUser(userId: string): Promise<ReferralReward[]> {
+  const rows = await queryAll<Record<string, unknown>>(
     "SELECT * FROM referral_rewards WHERE referrer_id = ? ORDER BY created_at DESC",
     [userId],
   );
   return rows.map(mapReward);
 }
 
-function getRewardById(id: string): ReferralReward | null {
-  const row = queryOne<Record<string, unknown>>("SELECT * FROM referral_rewards WHERE id = ?", [id]);
+async function getRewardById(id: string): Promise<ReferralReward | null> {
+  const row = await queryOne<Record<string, unknown>>("SELECT * FROM referral_rewards WHERE id = ?", [id]);
   return row ? mapReward(row) : null;
 }
 

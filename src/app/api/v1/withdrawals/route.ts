@@ -4,16 +4,16 @@ import { createWithdrawalRequest, listWithdrawals, WithdrawalError } from "@/lib
 import { isFeatureEnabled } from "@/lib/flags";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
-  return NextResponse.json({ withdrawals: listWithdrawals(auth.user.id) });
+  return NextResponse.json({ withdrawals: await listWithdrawals(auth.user.id) });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
 
-  if (!isFeatureEnabled("withdrawals_enabled")) {
+  if (!(await isFeatureEnabled("withdrawals_enabled"))) {
     return NextResponse.json(
       { error: "Withdrawals are currently disabled. Contact support." },
       { status: 403 },
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const withdrawal = createWithdrawalRequest({
+    const withdrawal = await createWithdrawalRequest({
       userId: auth.user.id,
       amountCents: body.amountCents!,
       destinationType: body.destinationType,

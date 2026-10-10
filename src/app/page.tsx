@@ -2,32 +2,47 @@ import type { Metadata } from "next";
 import { CabinetShell } from "@/components/sites/spl-trading/cabinet/cabinet-shell";
 import { DashboardCards, type DashboardSummary } from "@/components/sites/spl-trading/cabinet/dashboard-cards";
 import { HomeStats, type HomeCounts } from "@/components/sites/spl-trading/cabinet/home-stats";
+import { Landing } from "@/components/sites/spl-trading/public/landing";
+import { PublicShell } from "@/components/sites/spl-trading/public/public-shell";
 import { requirePageUser } from "@/lib/page-user";
 import { getUserCashBalanceCents } from "@/lib/ledger";
 import { listDepositOrders } from "@/lib/deposits";
 import { listWithdrawals } from "@/lib/withdrawals";
 
-export const metadata: Metadata = {
-  title: "Home",
-  description: "Trader portal for balances, payouts and settlements",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const user = await requirePageUser();
+
+  if (user) {
+    return {
+      title: "Home",
+      description: "Trader portal for balances, payouts and settlements",
+    };
+  }
+
+  return {
+    title: "Deposits, payouts and reports in one cabinet",
+    description:
+      "SPL Trading is a cabinet for funding an account with USDT, paying out to accounts you control, and reading every movement. No promised returns.",
+  };
+}
 
 export default async function Home() {
   const user = await requirePageUser();
 
   if (!user) {
-    const { SignInForm } = await import("@/components/sites/spl-trading/sign-in-form");
     return (
-      <SignInForm headLinkText="New here?" headLinkCta="Sign Up" headLinkTo="/auth/sign-up" />
+      <PublicShell>
+        <Landing />
+      </PublicShell>
     );
   }
 
-  const deposits = listDepositOrders(user.id);
-  const withdrawals = listWithdrawals(user.id);
+  const deposits = await listDepositOrders(user.id);
+  const withdrawals = await listWithdrawals(user.id);
   const credited = deposits.filter((order) => order.status === "credited");
 
   const summary: DashboardSummary = {
-    availableCashCents: getUserCashBalanceCents(user.id),
+    availableCashCents: await getUserCashBalanceCents(user.id),
     depositedPrincipalCents: credited.reduce((sum, order) => sum + order.amountCents, 0),
     pendingWithdrawalCents: withdrawals
       .filter((w) => w.status === "pending" || w.status === "approved" || w.status === "processing")

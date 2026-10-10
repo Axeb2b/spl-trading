@@ -16,6 +16,12 @@ dist/
 .env.test.local
 .env.production.local
 
+# Cloudflare secrets and local Wrangler state
+.dev.vars
+.dev.vars.*
+.wrangler/
+.open-next/
+
 # Debug
 npm-debug.log*
 yarn-debug.log*

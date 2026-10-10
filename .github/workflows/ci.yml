@@ -1,12 +1,18 @@
 name: CI
 
+# Run on every branch push and on every pull request. (The remote's default
+# branch is feat/local-backend-and-ui-redesign, so the previous master-only
+# triggers meant these checks never ran on GitHub.)
 on:
   push:
     branches:
-      - master
+      - "**"
   pull_request:
-    branches:
-      - master
+
+# Cancel superseded runs for the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
@@ -26,11 +32,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
+      - name: Lint, typecheck and build
+        run: npm run check

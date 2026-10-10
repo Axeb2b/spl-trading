@@ -7,14 +7,16 @@ export function getSessionFromRequest(request: NextRequest): SessionPayload | nu
   return readSessionToken(token);
 }
 
-export function getLocalUser(request: NextRequest): LocalUser | null {
+export async function getLocalUser(request: NextRequest): Promise<LocalUser | null> {
   const session = getSessionFromRequest(request);
   if (!session?.userId) return null;
   return getUserById(session.userId);
 }
 
-export function requireAuth(request: NextRequest): { user: LocalUser } | { error: NextResponse } {
-  const user = getLocalUser(request);
+export async function requireAuth(
+  request: NextRequest,
+): Promise<{ user: LocalUser } | { error: NextResponse }> {
+  const user = await getLocalUser(request);
   if (!user) {
     return { error: NextResponse.json({ error: "Authentication required." }, { status: 401 }) };
   }
@@ -24,8 +26,10 @@ export function requireAuth(request: NextRequest): { user: LocalUser } | { error
   return { user };
 }
 
-export function requireAdmin(request: NextRequest): { user: LocalUser } | { error: NextResponse } {
-  const auth = requireAuth(request);
+export async function requireAdmin(
+  request: NextRequest,
+): Promise<{ user: LocalUser } | { error: NextResponse }> {
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth;
   if (auth.user.role !== "admin") {
     return { error: NextResponse.json({ error: "Admin access required." }, { status: 403 }) };

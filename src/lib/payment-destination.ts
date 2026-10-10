@@ -10,7 +10,7 @@ export type PaymentDestination = {
 };
 
 export async function getPaymentDestination(): Promise<PaymentDestination> {
-  const address = getBep20Address();
+  const address = await getBep20Address();
   const configured = address.length > 0;
   let qrDataUrl: string | null = null;
   if (configured) {

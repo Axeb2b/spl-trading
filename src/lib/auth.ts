@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { getDb, newId, nowIso, queryOne } from "./db";
+import { execute, newId, nowIso, queryOne } from "./db";
 import { hashPassword, verifyPassword } from "./password";
 
 export type LocalUser = {
@@ -39,31 +39,42 @@ export async function registerUser(input: {
   if (!EMAIL_RE.test(email)) throw new AuthError("Enter a valid email address.", "INVALID_INPUT", 400);
   if (input.password.length < 8) throw new AuthError("Password must be at least 8 characters.", "INVALID_INPUT", 400);
 
-  const existing = queryOne<{ id: string }>("SELECT id FROM users WHERE email = ?", [email]);
-  if (existing) throw new AuthError("An account with this email already exists.", "EMAIL_TAKEN", 409);
-
   let referredBy: string | null = null;
   if (input.referralCode?.trim()) {
-    const referrer = queryOne<{ id: string }>("SELECT id FROM users WHERE referral_code = ?", [input.referralCode.trim().toUpperCase()]);
+    const referrer = await queryOne<{ id: string }>("SELECT id FROM users WHERE referral_code = ?", [input.referralCode.trim().toUpperCase()]);
     if (referrer) referredBy = referrer.id;
   }
 
   const passwordHash = await hashPassword(input.password);
   const id = newId();
   const now = nowIso();
+  const referralCode = generateReferralCode();
 
-  getDb()
-    .prepare(
+  // No SELECT-then-INSERT: the UNIQUE index on users.email is the arbiter, so a
+  // concurrent registration of the same address cannot slip through the gap.
+  try {
+    await execute(
       `INSERT INTO users (id, email, password_hash, name, role, status, referral_code, referred_by, created_at, updated_at)
        VALUES (?, ?, ?, ?, 'user', 'active', ?, ?, ?, ?)`,
-    )
-    .run(id, email, passwordHash, input.name.trim(), generateReferralCode(), referredBy, now, now);
+      [id, email, passwordHash, input.name.trim(), referralCode, referredBy, now, now],
+    );
+  } catch (error) {
+    if (isUniqueViolation(error, "users.email")) {
+      throw new AuthError("An account with this email already exists.", "EMAIL_TAKEN", 409);
+    }
+    throw error;
+  }
 
-  return { id, email, name: input.name.trim(), role: "user", status: "active", referralCode: "", createdAt: now };
+  return { id, email, name: input.name.trim(), role: "user", status: "active", referralCode, createdAt: now };
+}
+
+function isUniqueViolation(error: unknown, target: string): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("UNIQUE constraint failed") && message.includes(target);
 }
 
 export async function authenticateUser(email: string, password: string): Promise<LocalUser> {
-  const row = queryOne<{
+  const row = await queryOne<{
     id: string;
     email: string;
     name: string;
@@ -94,8 +105,8 @@ export async function authenticateUser(email: string, password: string): Promise
   };
 }
 
-export function getUserById(id: string): LocalUser | null {
-  const row = queryOne<{
+export async function getUserById(id: string): Promise<LocalUser | null> {
+  const row = await queryOne<{
     id: string;
     email: string;
     name: string;

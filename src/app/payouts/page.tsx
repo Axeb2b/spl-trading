@@ -14,7 +14,7 @@ export default async function PayoutsPage() {
   const user = await requirePageUser();
   if (!user) redirect("/auth/sign-in");
 
-  const rows: PayoutRow[] = listWithdrawals(user.id).map((request) => ({
+  const rows: PayoutRow[] = (await listWithdrawals(user.id)).map((request) => ({
     reference: request.internalRef,
     amountCents: request.amountCents,
     feeCents: request.feeCents,

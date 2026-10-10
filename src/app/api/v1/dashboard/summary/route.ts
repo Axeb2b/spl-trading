@@ -4,17 +4,17 @@ import { getUserCashBalanceCents } from "@/lib/ledger";
 import { queryOne } from "@/lib/db";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
   const { user } = auth;
 
-  const balanceCents = getUserCashBalanceCents(user.id);
+  const balanceCents = await getUserCashBalanceCents(user.id);
 
-  const depositRow = queryOne<{ total: number | null }>(
+  const depositRow = await queryOne<{ total: number | null }>(
     "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM deposit_orders WHERE user_id = ? AND status = 'credited'",
     [user.id],
   );
-  const withdrawalPendingRow = queryOne<{ total: number | null }>(
+  const withdrawalPendingRow = await queryOne<{ total: number | null }>(
     "SELECT COALESCE(SUM(amount_cents), 0) AS total FROM withdrawal_requests WHERE user_id = ? AND status IN ('pending','approved','processing')",
     [user.id],
   );

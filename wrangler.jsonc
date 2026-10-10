@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spl-trading",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXTJS_ENV": "production"
+  },
+  // Self-reference service binding. Required by the OpenNext Durable Object revalidation
+  // queue so it can re-request routes on this same worker. The `service` value MUST match
+  // the worker `name` above.
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "spl-trading"
+    }
+  ],
+  // Durable Object backing the OpenNext revalidation queue (free-tier, SQLite storage class).
+  // See open-next.config.ts — DO queue override, NOT R2 (R2 would require a credit card).
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NEXT_CACHE_DO_QUEUE",
+        "class_name": "DOQueueHandler"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DOQueueHandler"]
+    }
+  ],
+  // Application database (D1 — free tier, no card required).
+  // NOTE: `database_id` is a placeholder. Create the D1 database first, e.g.
+  //   npx wrangler d1 create spl
+  // then paste the returned id below before deploying.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "spl",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "src/lib/migrations"
+    }
+  ]
+  // Intentionally NO `r2_buckets` binding: R2 requires a credit card + $5 auth hold,
+  // which would break the free-tier / no-card requirement. The incremental cache is
+  // a no-op ("dummy") instead — see open-next.config.ts.
+}

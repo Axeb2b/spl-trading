@@ -14,7 +14,7 @@ export default async function PayinsPage() {
   const user = await requirePageUser();
   if (!user) redirect("/auth/sign-in");
 
-  const rows: PayinRow[] = listDepositOrders(user.id).map((order) => ({
+  const rows: PayinRow[] = (await listDepositOrders(user.id)).map((order) => ({
     reference: order.internalRef,
     amountCents: order.amountCents,
     network: order.network,

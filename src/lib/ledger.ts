@@ -1,4 +1,4 @@
-import { getDb, newId, nowIso, withTransaction, queryOne, queryAll } from "./db";
+import { newId, nowIso, queryOne, queryAll, runBatch, type SqlStatement } from "./db";
 
 export type LedgerAccount =
   | "asset_binance"
@@ -32,6 +32,16 @@ export type PostedTransaction = {
   alreadyPosted: boolean;
 };
 
+export type LedgerTxnInput = {
+  id: string;
+  idempotencyKey: string;
+  type: PostTransactionInput["type"];
+  description: string;
+  provider: string | null;
+  providerRef: string | null;
+  createdAt: string;
+};
+
 export class LedgerError extends Error {
   constructor(
     message: string,
@@ -48,41 +58,101 @@ export class LedgerError extends Error {
 }
 
 /**
- * Post a balanced double-entry transaction atomically.
- * Idempotent: if idempotencyKey already exists, returns the existing transaction
- * without posting again (alreadyPosted=true). Never double-credits.
+ * Statement that inserts a ledger transaction unless its idempotency key
+ * already exists. `guard` gates the insert on other business state living in
+ * the same batch (e.g. "the deposit order was just credited by this call"), so
+ * a caller that loses a race posts nothing. `ON CONFLICT DO NOTHING` covers the
+ * UNIQUE(idempotency_key) constraint as a backstop: the row simply is not
+ * re-inserted, and the caller detects it via `readPostedTransaction`.
  */
-export function postTransaction(input: PostTransactionInput): PostedTransaction {
+export function transactionStatement(txn: LedgerTxnInput, guard?: { sql: string; params?: unknown[] }): SqlStatement {
+  return {
+    sql: `INSERT INTO ledger_transactions (id, idempotency_key, type, description, provider, provider_ref, created_at)
+          SELECT ?, ?, ?, ?, ?, ?, ?
+          WHERE ${guard ? `EXISTS (${guard.sql})` : "1 = 1"}
+          ON CONFLICT DO NOTHING`,
+    params: [
+      txn.id,
+      txn.idempotencyKey,
+      txn.type,
+      txn.description,
+      txn.provider,
+      txn.providerRef,
+      txn.createdAt,
+      ...(guard?.params ?? []),
+    ],
+  };
+}
+
+/**
+ * Entry statements for a transaction. Each entry only lands when its parent
+ * transaction row exists, so a batch can never write orphaned entries; if any
+ * entry fails, the surrounding batch rolls the transaction row back with it.
+ */
+export function entryStatements(
+  txnId: string,
+  entries: LedgerEntryInput[],
+  createdAt: string,
+): SqlStatement[] {
+  return entries.map((entry) => ({
+    sql: `INSERT INTO ledger_entries (id, transaction_id, user_id, account, direction, amount_cents, currency, created_at)
+          SELECT ?, ?, ?, ?, ?, ?, ?, ?
+          WHERE EXISTS (SELECT 1 FROM ledger_transactions WHERE id = ?)`,
+    params: [
+      newId(),
+      txnId,
+      entry.userId,
+      entry.account,
+      entry.direction,
+      entry.amountCents,
+      entry.currency ?? "USD",
+      createdAt,
+      txnId,
+    ],
+  }));
+}
+
+/** Classify a batch outcome: did this caller's transaction id win the insert? */
+export async function readPostedTransaction(
+  idempotencyKey: string,
+  txnId: string,
+): Promise<PostedTransaction> {
+  const existing = await queryOne<{ id: string }>(
+    "SELECT id FROM ledger_transactions WHERE idempotency_key = ?",
+    [idempotencyKey],
+  );
+  if (existing && existing.id !== txnId) {
+    return { id: existing.id, idempotencyKey, alreadyPosted: true };
+  }
+  return { id: txnId, idempotencyKey, alreadyPosted: false };
+}
+
+/**
+ * Post a balanced double-entry transaction atomically (transaction row and all
+ * entries move together in one local transaction / D1 batch).
+ * Idempotent: if idempotencyKey already exists, returns the existing
+ * transaction without posting again (alreadyPosted=true). Never double-credits.
+ */
+export async function postTransaction(input: PostTransactionInput): Promise<PostedTransaction> {
   validateEntries(input.entries);
 
-  return withTransaction(() => {
-    const existing = queryOne<{ id: string }>(
-      "SELECT id FROM ledger_transactions WHERE idempotency_key = ?",
-      [input.idempotencyKey],
-    );
-    if (existing) {
-      return { id: existing.id, idempotencyKey: input.idempotencyKey, alreadyPosted: true };
-    }
+  const txnId = newId();
+  const now = nowIso();
 
-    const txnId = newId();
-    const now = nowIso();
-    const db = getDb();
+  await runBatch([
+    transactionStatement({
+      id: txnId,
+      idempotencyKey: input.idempotencyKey,
+      type: input.type,
+      description: input.description ?? "",
+      provider: input.provider ?? null,
+      providerRef: input.providerRef ?? null,
+      createdAt: now,
+    }),
+    ...entryStatements(txnId, input.entries, now),
+  ]);
 
-    db.prepare(
-      `INSERT INTO ledger_transactions (id, idempotency_key, type, description, provider, provider_ref, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(txnId, input.idempotencyKey, input.type, input.description ?? "", input.provider ?? null, input.providerRef ?? null, now);
-
-    const insertEntry = db.prepare(
-      `INSERT INTO ledger_entries (id, transaction_id, user_id, account, direction, amount_cents, currency, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    for (const entry of input.entries) {
-      insertEntry.run(newId(), txnId, entry.userId, entry.account, entry.direction, entry.amountCents, entry.currency ?? "USD", now);
-    }
-
-    return { id: txnId, idempotencyKey: input.idempotencyKey, alreadyPosted: false };
-  });
+  return readPostedTransaction(input.idempotencyKey, txnId);
 }
 
 function validateEntries(entries: LedgerEntryInput[]): void {
@@ -106,8 +176,8 @@ function validateEntries(entries: LedgerEntryInput[]): void {
  * Get a user's available cash balance in cents.
  * liability_user_cash is a credit-normal account: balance = credits - debits.
  */
-export function getUserCashBalanceCents(userId: string): number {
-  const row = queryOne<{ balance: number | null }>(
+export async function getUserCashBalanceCents(userId: string): Promise<number> {
+  const row = await queryOne<{ balance: number | null }>(
     `SELECT COALESCE(SUM(CASE WHEN direction='credit' THEN amount_cents ELSE -amount_cents END), 0) AS balance
      FROM ledger_entries WHERE user_id = ? AND account = 'liability_user_cash'`,
     [userId],
@@ -115,7 +185,7 @@ export function getUserCashBalanceCents(userId: string): number {
   return Number(row?.balance ?? 0);
 }
 
-export function getUserLedgerEntries(userId: string, limit = 100): unknown[] {
+export async function getUserLedgerEntries(userId: string, limit = 100): Promise<unknown[]> {
   return queryAll(
     `SELECT e.id, e.account, e.direction, e.amount_cents, e.currency, e.created_at,
             t.type, t.description, t.provider, t.provider_ref

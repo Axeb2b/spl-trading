@@ -14,7 +14,7 @@ export async function requirePageUser(): Promise<LocalUser | null> {
   const session = await getSession();
   if (!session?.userId) return null;
 
-  const user = getUserById(session.userId);
+  const user = await getUserById(session.userId);
   if (!user || user.status === "suspended") return null;
 
   return user;

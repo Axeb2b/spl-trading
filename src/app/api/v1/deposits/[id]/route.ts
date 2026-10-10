@@ -7,11 +7,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
-  const order = getDepositOrderById(id);
+  const order = await getDepositOrderById(id);
   if (!order || order.userId !== auth.user.id) {
     return NextResponse.json({ error: "Deposit not found." }, { status: 404 });
   }
