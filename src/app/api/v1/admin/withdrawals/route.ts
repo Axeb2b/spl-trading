@@ -3,12 +3,11 @@ import { requireAdmin } from "@/lib/api-auth";
 import { queryAll } from "@/lib/db";
 import { approveWithdrawal, startProcessing, completeWithdrawal, rejectWithdrawal, WithdrawalError } from "@/lib/withdrawals";
 import { audit } from "@/lib/audit";
-import { isFeatureEnabled } from "@/lib/flags";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if ("error" in auth) return auth.error;
-  const rows = await queryAll<Record<string, unknown>>("SELECT * FROM withdrawal_requests ORDER BY created_at DESC LIMIT 200");
+  const rows = await queryAll<Record<string, unknown>>("SELECT w.*, u.email AS user_email, u.name AS user_name FROM withdrawal_requests w JOIN users u ON u.id = w.user_id ORDER BY w.created_at DESC LIMIT 200");
   return NextResponse.json({ withdrawals: rows });
 }
 
@@ -27,9 +26,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    if (!(await isFeatureEnabled("withdrawals_enabled"))) {
-      return NextResponse.json({ error: "Withdrawals feature is disabled." }, { status: 403 });
-    }
     switch (body.action) {
       case "approve":
         await approveWithdrawal(body.withdrawalId, auth.user.id);
@@ -38,11 +34,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         await startProcessing(body.withdrawalId);
         break;
       case "complete":
-        if (!body.txHash) return NextResponse.json({ error: "txHash required to complete." }, { status: 400 });
+        if (!body.txHash || !/^0x[a-fA-F0-9]{64}$/.test(body.txHash)) {
+          return NextResponse.json({ error: "A valid BSC transaction hash is required to complete a payout." }, { status: 400 });
+        }
         await completeWithdrawal(body.withdrawalId, body.txHash);
         break;
       case "reject":
-        await rejectWithdrawal(body.withdrawalId, auth.user.id, body.reason ?? "Rejected by admin");
+        if ((body.reason ?? "").trim().length < 5) {
+          return NextResponse.json({ error: "A short reason is required to reject a payout." }, { status: 400 });
+        }
+        await rejectWithdrawal(body.withdrawalId, auth.user.id, body.reason!.trim());
         break;
       default:
         return NextResponse.json({ error: "Unknown action." }, { status: 400 });

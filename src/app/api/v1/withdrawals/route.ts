@@ -1,12 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { createWithdrawalRequest, listWithdrawals, WithdrawalError } from "@/lib/withdrawals";
-import { isFeatureEnabled } from "@/lib/flags";
+import { getWithdrawalFeeBps, isFeatureEnabled } from "@/lib/flags";
+import { getDepositEligibility } from "@/lib/deposit-eligibility";
+import { MIN_WITHDRAWAL_CENTS } from "@/lib/withdrawal-create";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
-  return NextResponse.json({ withdrawals: await listWithdrawals(auth.user.id) });
+  const [withdrawals, eligibility, feeBps, withdrawalsEnabled] = await Promise.all([
+    listWithdrawals(auth.user.id),
+    getDepositEligibility(auth.user.id),
+    getWithdrawalFeeBps(),
+    isFeatureEnabled("withdrawals_enabled"),
+  ]);
+  return NextResponse.json({
+    withdrawals,
+    eligibility,
+    withdrawalsEnabled,
+    limits: { minCents: MIN_WITHDRAWAL_CENTS, feeBps },
+  });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -15,7 +28,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!(await isFeatureEnabled("withdrawals_enabled"))) {
     return NextResponse.json(
-      { error: "Withdrawals are currently disabled. Contact support." },
+      { error: "Payout requests are not enabled for this deployment." },
+      { status: 403 },
+    );
+  }
+
+  const eligibility = await getDepositEligibility(auth.user.id);
+  if (!eligibility.eligible) {
+    return NextResponse.json(
+      {
+        error: "A verified deposit of at least $500.00 is required before payout requests unlock.",
+        code: "VERIFIED_DEPOSIT_REQUIRED",
+        eligibility,
+      },
       { status: 403 },
     );
   }
@@ -30,8 +55,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!Number.isInteger(body.amountCents) || (body.amountCents ?? 0) <= 0) {
     return NextResponse.json({ error: "amountCents must be a positive integer." }, { status: 400 });
   }
-  if (!body.destinationType || !body.destinationRef) {
-    return NextResponse.json({ error: "destinationType and destinationRef are required." }, { status: 400 });
+  if (body.destinationType !== "BEP20") {
+    return NextResponse.json({ error: "Only USDT on BNB Smart Chain (BEP-20) is supported." }, { status: 400 });
+  }
+  if (!body.destinationRef || !/^0x[a-fA-F0-9]{40}$/.test(body.destinationRef)) {
+    return NextResponse.json({ error: "Enter a valid 0x-prefixed BEP-20 destination address." }, { status: 400 });
   }
 
   try {

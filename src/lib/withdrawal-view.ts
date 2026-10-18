@@ -22,7 +22,7 @@ export type WithdrawalRequest = {
 export class WithdrawalError extends Error {
   constructor(
     message: string,
-    public readonly code: "INSUFFICIENT_FUNDS" | "BELOW_MIN" | "NOT_FOUND" | "INVALID_STATE",
+    public readonly code: "INSUFFICIENT_FUNDS" | "BELOW_MIN" | "NOT_FOUND" | "INVALID_STATE" | "FEATURE_DISABLED" | "DEPOSIT_REQUIRED" | "INVALID_DESTINATION" | "INVALID_AMOUNT",
     public readonly status: number,
   ) {
     super(message);

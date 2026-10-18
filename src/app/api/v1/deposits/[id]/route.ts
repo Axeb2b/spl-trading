@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { getDepositOrderById } from "@/lib/deposits";
 import { getPaymentDestination } from "@/lib/payment-destination";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +16,11 @@ export async function GET(
   if (!order || order.userId !== auth.user.id) {
     return NextResponse.json({ error: "Deposit not found." }, { status: 404 });
   }
-  const destination = await getPaymentDestination();
+  const openStatuses = new Set(["pending", "awaiting_payment", "confirming"]);
+  const beforeExpiry = !order.expiresAt || Date.parse(order.expiresAt) > Date.now();
+  const depositsEnabled = await isFeatureEnabled("deposits_enabled");
+  const destination = depositsEnabled && openStatuses.has(order.status) && beforeExpiry
+    ? await getPaymentDestination()
+    : { address: "", network: "BEP20" as const, asset: "USDT" as const, qrDataUrl: null, configured: false };
   return NextResponse.json({ deposit: order, destination });
 }

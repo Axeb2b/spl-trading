@@ -6,7 +6,7 @@ import { requirePageUser } from "@/lib/page-user";
 
 export const metadata: Metadata = {
   title: "Accounts",
-  description: "Manage payout accounts and bank groups",
+  description: "Payout destination availability and account notes.",
 };
 
 export default async function AccountsPage() {

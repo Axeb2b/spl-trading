@@ -5,7 +5,7 @@ import { SupportSections } from "@/components/sites/spl-trading/public/support-c
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "How to contact SPL Trading support: in-app support from your cabinet and the Telegram channel opened there. No phone numbers or email addresses are published.",
+    "How to find the support options configured for an SPL Trading deployment and what to include in a request.",
 };
 
 export default function ContactPage() {
@@ -14,7 +14,7 @@ export default function ContactPage() {
       <PublicPageIntro
         eyebrow="Contact"
         title="Talk to the team"
-        lede="Support runs through your account. These are the channels that exist today — nothing on this page is a placeholder for a phone number or inbox that isn't there."
+        lede="Support options depend on the deployment. Use only the contact path shown in your signed-in cabinet or provided by your platform operator; this page does not invent an address or handle."
       />
       <SupportSections />
     </PublicShell>

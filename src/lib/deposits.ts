@@ -1,6 +1,6 @@
 import { newId, nowIso, queryOne, queryAll, execute, runBatch } from "./db";
 import { entryStatements, transactionStatement, getUserCashBalanceCents } from "./ledger";
-import { getDepositMinCents, getDepositMaxCents } from "./flags";
+import { getDepositMinCents, getDepositMaxCents, getBep20Address, isFeatureEnabled } from "./flags";
 
 export type DepositOrder = {
   id: string;
@@ -23,7 +23,7 @@ export type DepositOrder = {
 export class DepositError extends Error {
   constructor(
     message: string,
-    public readonly code: "BELOW_MIN" | "ABOVE_MAX" | "NOT_FOUND" | "INVALID_STATE",
+    public readonly code: "BELOW_MIN" | "ABOVE_MAX" | "NOT_FOUND" | "INVALID_STATE" | "FEATURE_DISABLED" | "NOT_CONFIGURED" | "INVALID_INPUT",
     public readonly status: number,
   ) {
     super(message);
@@ -43,6 +43,19 @@ export async function createDepositOrder(input: {
   currency?: string;
   network?: string;
 }): Promise<DepositOrder> {
+  if (!(await isFeatureEnabled("deposits_enabled"))) {
+    throw new DepositError("Deposit orders are not enabled for this deployment.", "FEATURE_DISABLED", 403);
+  }
+  if (!/^0x[a-fA-F0-9]{40}$/.test(await getBep20Address())) {
+    throw new DepositError("A valid BEP-20 receiving address is not configured.", "NOT_CONFIGURED", 503);
+  }
+  if ((input.currency !== undefined && input.currency !== "USD") || (input.network !== undefined && input.network !== "BEP20")) {
+    throw new DepositError("Only USD-accounted USDT orders on BEP-20 are supported.", "INVALID_INPUT", 400);
+  }
+  if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0) {
+    throw new DepositError("Deposit amount must be positive integer cents.", "INVALID_INPUT", 400);
+  }
+
   const min = await getDepositMinCents();
   const max = await getDepositMaxCents();
   if (input.amountCents < min) {
@@ -95,18 +108,45 @@ export async function listDepositOrders(userId: string, limit = 50): Promise<Dep
 export async function creditVerifiedDeposit(input: {
   depositId: string;
   verifiedBy: string | null;
-  providerRef?: string;
+  providerRef: string;
+  paymentTimestamp: string;
 }): Promise<{ alreadyCredited: boolean }> {
   const order = await getDepositOrderById(input.depositId);
   if (!order) throw new DepositError("Deposit order not found.", "NOT_FOUND", 404);
-  if (order.status === "credited") return { alreadyCredited: true };
+  if (!/^0x[a-fA-F0-9]{64}$/.test(input.providerRef)) {
+    throw new DepositError("A valid BSC transaction hash is required.", "INVALID_STATE", 400);
+  }
+  if (order.status === "credited") {
+    if (order.providerRef === input.providerRef) return { alreadyCredited: true };
+    throw new DepositError("This deposit order is already credited with a different BSC transaction.", "INVALID_STATE", 409);
+  }
   if (order.status !== "pending" && order.status !== "awaiting_payment" && order.status !== "confirming") {
     throw new DepositError(`Cannot credit a deposit in state '${order.status}'.`, "INVALID_STATE", 409);
   }
 
+  const paymentAtMs = Date.parse(input.paymentTimestamp);
+  const createdAtMs = Date.parse(order.createdAt);
+  const expiresAtMs = order.expiresAt ? Date.parse(order.expiresAt) : Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(paymentAtMs) || !Number.isFinite(createdAtMs)) {
+    throw new DepositError("A valid on-chain payment timestamp is required.", "INVALID_STATE", 400);
+  }
+  if (paymentAtMs < createdAtMs - 2 * 60 * 1000 || paymentAtMs > Date.now() + 5 * 60 * 1000) {
+    throw new DepositError("The transaction timestamp is outside the order's valid time window.", "INVALID_STATE", 400);
+  }
+  if (Number.isFinite(expiresAtMs) && paymentAtMs > expiresAtMs) {
+    throw new DepositError("The transfer was made after the deposit order expired and cannot be credited to this order.", "INVALID_STATE", 409);
+  }
+  const previouslyCredited = await queryOne<{ id: string }>(
+    "SELECT id FROM deposit_orders WHERE provider_ref = ? AND status = 'credited' LIMIT 1",
+    [input.providerRef],
+  );
+  if (previouslyCredited && previouslyCredited.id !== order.id) {
+    throw new DepositError("This BSC transaction has already been credited to another order.", "INVALID_STATE", 409);
+  }
+
   const now = nowIso();
   const txnId = newId();
-  const providerRef = input.providerRef ?? null;
+  const providerRef = input.providerRef;
 
   const [claim] = await runBatch([
     {

@@ -1,16 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { createDepositOrder, listDepositOrders, DepositError } from "@/lib/deposits";
-import { isFeatureEnabled, getDepositMinCents, getDepositMaxCents } from "@/lib/flags";
+import { isFeatureEnabled, getDepositMinCents, getDepositMaxCents, getBep20Address } from "@/lib/flags";
 import { getPaymentDestination } from "@/lib/payment-destination";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAuth(request);
   if ("error" in auth) return auth.error;
-  const destination = await getPaymentDestination();
+  const depositsEnabled = await isFeatureEnabled("deposits_enabled");
+  const receivingAddress = depositsEnabled ? await getBep20Address() : "";
+  const destination = {
+    address: "",
+    network: "BEP20" as const,
+    asset: "USDT" as const,
+    qrDataUrl: null,
+    configured: /^0x[a-fA-F0-9]{40}$/.test(receivingAddress),
+  };
   return NextResponse.json({
     deposits: await listDepositOrders(auth.user.id),
     destination,
+    depositsEnabled,
     limits: { minCents: await getDepositMinCents(), maxCents: await getDepositMaxCents() },
   });
 }
@@ -21,9 +30,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!(await isFeatureEnabled("deposits_enabled"))) {
     return NextResponse.json(
-      { error: "Deposits are currently disabled. Contact support." },
+      { error: "Deposit orders are not enabled for this deployment." },
       { status: 403 },
     );
+  }
+
+  const destination = await getPaymentDestination();
+  if (!destination.configured) {
+    return NextResponse.json({ error: "A valid BEP-20 receiving address is not configured." }, { status: 503 });
   }
 
   let body: { amountCents?: number; currency?: string; network?: string };
@@ -44,7 +58,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       currency: body.currency,
       network: body.network,
     });
-    const destination = await getPaymentDestination();
     return NextResponse.json({ deposit: order, destination }, { status: 201 });
   } catch (err) {
     if (err instanceof DepositError) {

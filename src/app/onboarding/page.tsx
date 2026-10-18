@@ -5,8 +5,8 @@ import { OnboardingView } from "@/components/sites/spl-trading/cabinet/onboardin
 import { requirePageUser } from "@/lib/page-user";
 
 export const metadata: Metadata = {
-  title: "Onboarding",
-  description: "12-step setup guide for your SPL TRADING account",
+  title: "Getting started",
+  description: "A practical orientation to deposit orders, account records, fees, and risks.",
 };
 
 export default async function OnboardingPage() {
@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   if (!user) redirect("/auth/sign-in");
 
   return (
-    <CabinetShell title="Onboarding" email={user.email} name={user.name}>
+    <CabinetShell title="Getting started" email={user.email} name={user.name}>
       <OnboardingView />
     </CabinetShell>
   );

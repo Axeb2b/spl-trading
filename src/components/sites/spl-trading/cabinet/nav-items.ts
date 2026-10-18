@@ -1,20 +1,25 @@
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  FileText,
+  Home,
+  Landmark,
+  ListChecks,
+  type LucideIcon,
+} from "lucide-react";
+
 export type NavItem = {
   href: string;
   label: string;
-  icon: string;
+  mobileLabel: string;
+  icon: LucideIcon;
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Home", icon: "pi-objects-column" },
-  { href: "/onboarding", label: "Onboarding", icon: "pi-list" },
-  { href: "/accounts", label: "Accounts", icon: "pi-credit-card" },
-  { href: "/payins", label: "Payins", icon: "pi-arrow-down" },
-  { href: "/payouts", label: "Payouts", icon: "pi-arrow-up" },
-  { href: "/report", label: "Report", icon: "pi-file-arrow-up" },
+  { href: "/", label: "Overview", mobileLabel: "Home", icon: Home },
+  { href: "/onboarding", label: "Getting started", mobileLabel: "Setup", icon: ListChecks },
+  { href: "/accounts", label: "Accounts", mobileLabel: "Accounts", icon: Landmark },
+  { href: "/payins", label: "Deposits", mobileLabel: "Deposits", icon: ArrowDownToLine },
+  { href: "/payouts", label: "Payouts", mobileLabel: "Payouts", icon: ArrowUpFromLine },
+  { href: "/report", label: "Reports", mobileLabel: "Reports", icon: FileText },
 ];
-
-export const NOTIFICATIONS = [
-  { kind: "info", text: "Verification pending. Complete Telegram step." },
-  { kind: "warn", text: "Deposit is required before any trading operations." },
-  { kind: "success", text: "Your account UI preview is ready." },
-] as const;

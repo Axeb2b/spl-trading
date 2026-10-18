@@ -5,7 +5,7 @@ import { SupportSections } from "@/components/sites/spl-trading/public/support-c
 export const metadata: Metadata = {
   title: "Support",
   description:
-    "Getting help with an SPL Trading account: in-app support, the Telegram channel opened from the cabinet, and what to include in a request.",
+    "How to find the support options configured for your SPL Trading account and what information to include in a request.",
 };
 
 export default function SupportPage() {
@@ -14,7 +14,7 @@ export default function SupportPage() {
       <PublicPageIntro
         eyebrow="Support"
         title="Help with your account"
-        lede="The same channels as the contact page, with the practical detail of what to send so a request can be picked up without a round trip."
+        lede="Support options vary by deployment. If your cabinet includes a support link, use it with the order reference and transfer details; otherwise follow the contact route provided by your platform operator."
       />
       <SupportSections />
     </PublicShell>

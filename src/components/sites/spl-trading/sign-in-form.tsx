@@ -86,8 +86,8 @@ export function SignInForm({ headLinkText, headLinkCta, headLinkTo }: SignInForm
     <AuthShell
       title="Welcome back!"
       subtitle="Sign in to your trader account"
-      asideTitle="Welcome back to the trader portal"
-      asideText="Sign in to check balances, cover payouts and settle in crypto or fiat."
+      asideTitle="Welcome back to your account"
+      asideText="Sign in to review your balance, deposit orders, payout activity, and transaction records."
       headLinkText={headLinkText}
       headLinkCta={headLinkCta}
       headLinkTo={headLinkTo}
@@ -140,7 +140,6 @@ export function SignInForm({ headLinkText, headLinkCta, headLinkTo }: SignInForm
           loadingLabel="Signing in"
           loading={loading}
           disabled={!valid || loading}
-          onPrimary={submit}
         />
       </form>
     </AuthShell>

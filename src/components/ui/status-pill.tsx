@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 export type StatusTone = "neutral" | "info" | "warning" | "success" | "danger";
 
 const TONE_CLASS: Record<StatusTone, string> = {
-  neutral: "bg-slate-100 text-slate-700 ring-slate-200",
-  info: "bg-blue-50 text-blue-700 ring-blue-200",
-  warning: "bg-amber-50 text-amber-700 ring-amber-200",
-  success: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  danger: "bg-red-50 text-red-700 ring-red-200",
+  neutral: "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
+  info: "bg-sky-50 text-sky-800 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900",
+  warning: "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-200 dark:ring-amber-900",
+  success: "bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/55 dark:text-emerald-200 dark:ring-emerald-900",
+  danger: "bg-red-50 text-red-800 ring-red-200 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-900",
 };
 
 type StatusPillProps = {
@@ -20,11 +20,12 @@ export function StatusPill({ tone = "neutral", label, className }: StatusPillPro
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
+        "inline-flex min-h-6 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none ring-1 ring-inset",
         TONE_CLASS[tone],
         className,
       )}
     >
+      <span className="size-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true" />
       {label}
     </span>
   );

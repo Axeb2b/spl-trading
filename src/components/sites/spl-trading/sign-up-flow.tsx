@@ -74,7 +74,7 @@ export function SignUpFlow() {
 
       if (response.ok) {
         toast.success("Account created", {
-          description: "Welcome to SPL Trading. Make a deposit to unlock your dashboard.",
+          description: "A verified $500 deposit is required to unlock payout features.",
         });
         router.replace("/");
         router.refresh();
@@ -107,8 +107,8 @@ export function SignUpFlow() {
     <AuthShell
       title="Create your account"
       subtitle="Register to start depositing and tracking payouts"
-      asideTitle="Open a trader account"
-      asideText="Create your account, fund it with USDT, and start using payins and payouts."
+      asideTitle="Start with a clear account view"
+      asideText="Create your account to open the cabinet, review supported features, and follow transaction activity where enabled."
       headLinkText="Already registered?"
       headLinkCta="Sign In"
       headLinkTo="/auth/sign-in"
@@ -183,7 +183,6 @@ export function SignUpFlow() {
           loadingLabel="Creating account"
           loading={loading}
           disabled={!valid || loading}
-          onPrimary={submit}
         />
       </form>
     </AuthShell>

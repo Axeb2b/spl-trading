@@ -1,82 +1,43 @@
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, CircleHelp } from "lucide-react";
 import { AuthShell } from "./auth-shell";
-import {
-  AuthActions,
-  AuthBanner,
-  AuthField,
-  type BannerKind,
-} from "./auth-primitives";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ForgotPasswordForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState(false);
-
-  function submit() {
-    if (!EMAIL_RE.test(email.trim())) {
-      setError("Enter a valid email address.");
-      return;
-    }
-    setError("");
-    setNotice(true);
-  }
-
   return (
     <AuthShell
-      title="Reset password"
-      subtitle="Step 1 of 3 · enter your email"
-      asideTitle="Get back into your account"
-      asideText="Enter the email you registered with — we'll send a one-time code, and you'll set a new password."
+      title="Password recovery"
+      subtitle="Self-service password reset is not configured for this deployment."
+      asideTitle="Need help getting back in?"
+      asideText="This page does not send a recovery email or one-time code. Contact the platform operator through the support channel provided for your account."
       asideItems={[
-        { text: "Code by email — arrives in seconds", icon: "mail" },
-        { text: "Same code rules: 10 min, 5 attempts", icon: "lock" },
+        { text: "No email or code is sent from this page" },
+        { text: "Never share your password or sign-in codes" },
       ]}
-      step={1}
-      stepLabels={["Email", "Code", "New password"]}
       headLinkText="Remember it?"
       headLinkCta="Sign in"
       headLinkTo="/auth/sign-in"
-      footText="Remember your password?"
+      footText="Ready to try again?"
       footCta="Sign in"
       footLinkTo="/auth/sign-in"
     >
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-      >
-        {notice ? (
-          <AuthBanner
-            kind={"info" as BannerKind}
-            title="Local clone — no email is sent"
-            text="Recovery is disconnected from sutra-reg.org. The source posts this address to /api/auth and emails a one-time code; here it stays in the page."
-          />
-        ) : null}
-        <AuthField
-          label="Email"
-          value={email}
-          type="email"
-          placeholder="trader@example.com"
-          autoComplete="email"
-          error={error}
-          hint="We will send a one-time recovery code to this address."
-          onChange={(value) => {
-            setEmail(value);
-            setError("");
-          }}
-        />
-        <AuthActions
-          primaryLabel="Send code"
-          disabled={!email.trim()}
-          onPrimary={submit}
-        />
-      </form>
+      <div className="flex flex-col gap-5">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30">
+          <CircleHelp className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+          <div>
+            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Password reset is unavailable here</p>
+            <p className="mt-1 text-sm leading-6 text-amber-900/80 dark:text-amber-200/80">
+              No recovery email will be sent. Please use the support contact supplied by your platform operator to verify your identity and restore access.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/auth/sign-in"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-900 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-lime-300 dark:text-emerald-950 dark:hover:bg-lime-200"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Back to sign in
+        </Link>
+      </div>
     </AuthShell>
   );
 }

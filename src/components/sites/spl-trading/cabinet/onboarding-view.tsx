@@ -1,167 +1,102 @@
 import Link from "next/link";
-import { CheckCircle2, CircleDashed, HelpCircle, Percent } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpenCheck,
+  CircleAlert,
+  FileText,
+  Landmark,
+  WalletCards,
+} from "lucide-react";
 
-type Module = {
-  id: string;
-  title: string;
-  body: string;
-  cta?: string;
-  href?: string;
-};
-
-const MODULES: Module[] = [
+const GUIDES = [
   {
-    id: "welcome",
-    title: "Welcome to SPL TRADING",
-    body: "12 short steps to get you fully set up. Finish Telegram, deposit, and add your first payout account to start trading.",
+    number: "01",
+    title: "Review fees and limits",
+    body: "Check the default deposit range, withdrawal fee, and order expiry. Values shown in your cabinet take precedence.",
+    href: "/fees",
+    cta: "Review fees",
+    icon: FileText,
   },
   {
-    id: "telegram",
-    title: "Connect Telegram",
-    body: "Link your Telegram account so you can receive notifications and support 24/7.",
+    number: "02",
+    title: "Understand the transfer risks",
+    body: "Confirm the asset, network, address, and amount every time. A blockchain transfer sent incorrectly may not be recoverable.",
+    href: "/risk",
+    cta: "Read the disclosure",
+    icon: CircleAlert,
   },
   {
-    id: "deposit",
-    title: "Make your first deposit",
-    body: "Top up your account with USDT (minimum 2000 USDT) to unlock the dashboard and start trading.",
-    cta: "Go to deposit",
+    number: "03",
+    title: "Open the deposit flow",
+    body: "Create an order only when deposits are available in your deployment. Receiving details stay inside the signed-in dialog.",
     href: "/",
+    cta: "Go to overview",
+    icon: WalletCards,
   },
   {
-    id: "accounts",
-    title: "Add a payout account",
-    body: "Add at least one bank account or e-wallet so we can route your payouts correctly.",
-    cta: "Open accounts",
-    href: "/accounts",
+    number: "04",
+    title: "Keep the records close",
+    body: "Use the deposit, payout, and report pages to follow references and review the records currently associated with your account.",
+    href: "/report",
+    cta: "View reports",
+    icon: BookOpenCheck,
   },
-  {
-    id: "verify",
-    title: "Complete verification",
-    body: "Upload your ID and a selfie to verify your identity. Verification usually takes under 5 minutes.",
-  },
-  {
-    id: "limits",
-    title: "Set your limits",
-    body: "Choose your daily payin / payout limits and settlement schedule. You can change these anytime.",
-  },
-  {
-    id: "payouts",
-    title: "Create your first payout",
-    body: "Send a test payout to one of your accounts to confirm the full round-trip works.",
-    cta: "Open payouts",
-    href: "/payouts",
-  },
-  {
-    id: "api",
-    title: "Connect the API (optional)",
-    body: "If you have a website or app, plug in our REST API to automate payins and payouts.",
-  },
-  {
-    id: "webhooks",
-    title: "Set up webhooks (optional)",
-    body: "Get real-time callbacks on every payin / payout status change.",
-  },
-  {
-    id: "settlement",
-    title: "Configure settlement",
-    body: "Choose how often we settle your balance to your bank or crypto wallet.",
-  },
-  {
-    id: "team",
-    title: "Invite your team (optional)",
-    body: "Add operators and analysts with role-based access.",
-  },
-  {
-    id: "done",
-    title: "You're all set!",
-    body: "Head back to the dashboard to start monitoring payins and payouts in real time.",
-    cta: "Back to home",
-    href: "/",
-  },
-];
-
-const COMPLETED = 1;
-const TOTAL = MODULES.length;
+] as const;
 
 export function OnboardingView() {
-  const progress = Math.round((COMPLETED / TOTAL) * 100);
-
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      <ol className="flex-1 space-y-3">
-        {MODULES.map((module, index) => {
-          const done = index < COMPLETED;
-          return (
-            <li
-              key={module.id}
-              className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
-            >
-              <span
-                className={`grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold ${
-                  done
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                }`}
-              >
-                {done ? <CheckCircle2 className="size-4" aria-hidden /> : index + 1}
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                  {module.title}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">{module.body}</p>
-                {module.cta && module.href ? (
-                  <Link
-                    href={module.href}
-                    className="mt-3 inline-flex h-9 items-center rounded-lg bg-slate-900 px-3.5 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-                  >
-                    {module.cta}
-                  </Link>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-
-      <aside className="w-full space-y-4 lg:w-72">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
-            <HelpCircle className="size-4 text-slate-400" aria-hidden />
-            Need help?
-          </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Stuck on a step? Support is available 24/7 in Telegram and via email.
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <section>
+        <div className="mb-4 max-w-2xl">
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+            A practical starting point for the cabinet. These are reference links, not a completion tracker; account features depend on the deployment settings.
           </p>
-          <button
-            type="button"
-            className="mt-4 h-9 w-full rounded-lg border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            Contact support
-          </button>
         </div>
+        <ol className="grid gap-3 sm:grid-cols-2">
+          {GUIDES.map((guide) => {
+            const Icon = guide.icon;
+            return (
+              <li key={guide.number} className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/[0.025] dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-xs font-semibold tracking-[0.12em] text-emerald-700 dark:text-emerald-400">{guide.number}</span>
+                  <span className="grid size-9 place-items-center rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <Icon className="size-[18px]" aria-hidden />
+                  </span>
+                </div>
+                <h2 className="mt-4 text-base font-semibold tracking-[-0.02em] text-slate-950 dark:text-white">{guide.title}</h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">{guide.body}</p>
+                <Link href={guide.href} className="mt-5 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-emerald-800 transition hover:gap-2.5 dark:text-emerald-300">
+                  {guide.cta}<ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
-            <Percent className="size-4 text-slate-400" aria-hidden />
-            Progress
-          </h2>
-          <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-slate-50">
-            {progress}%
+      <aside className="space-y-4">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/[0.025] dark:border-slate-800 dark:bg-slate-900">
+          <span className="grid size-9 place-items-center rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+            <Landmark className="size-[18px]" aria-hidden />
+          </span>
+          <h2 className="mt-4 text-sm font-semibold text-slate-950 dark:text-white">Payout destinations</h2>
+          <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+            Payout addresses are entered with a request and are not stored on this page. Payouts unlock after at least $500 has been credited and are manually reviewed.
           </p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-            <CircleDashed className="size-3.5" aria-hidden />
-            {COMPLETED} of {TOTAL} modules complete
+          <Link href="/accounts" className="mt-4 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            Open accounts<ArrowRight className="size-3.5" aria-hidden />
+          </Link>
+        </section>
+
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 dark:border-emerald-900/70 dark:bg-emerald-950/30">
+          <h2 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">Need a hand?</h2>
+          <p className="mt-2 text-xs leading-5 text-emerald-900/75 dark:text-emerald-200/75">
+            Support options vary by deployment. Use a verified contact path supplied by your platform operator.
           </p>
-          <div
-            className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
-            role="img"
-            aria-label={`Onboarding ${progress} percent complete`}
-          >
-            <div className="h-full rounded-full bg-blue-600" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
+          <Link href="/support" className="mt-3 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-emerald-900 underline-offset-2 hover:underline dark:text-emerald-200">
+            View support options<ArrowRight className="size-3.5" aria-hidden />
+          </Link>
+        </section>
       </aside>
     </div>
   );

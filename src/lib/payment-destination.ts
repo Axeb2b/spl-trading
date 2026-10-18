@@ -11,7 +11,7 @@ export type PaymentDestination = {
 
 export async function getPaymentDestination(): Promise<PaymentDestination> {
   const address = await getBep20Address();
-  const configured = address.length > 0;
+  const configured = /^0x[a-fA-F0-9]{40}$/.test(address);
   let qrDataUrl: string | null = null;
   if (configured) {
     try {

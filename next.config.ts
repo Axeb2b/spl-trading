@@ -11,8 +11,8 @@ if (process.argv.includes("dev")) {
 }
 
 const nextConfig: NextConfig = {
-  /* config options here */
   output: "standalone",
+  allowedDevOrigins: ["*.e2b.app"],
 };
 
 export default nextConfig;

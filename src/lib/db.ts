@@ -34,7 +34,12 @@ type Driver = {
 };
 
 /** Registered file migrations, applied in order by the local driver only. */
-const MIGRATION_FILES = ["001_init.sql", "002_referral_rewards_unique.sql"];
+const MIGRATION_FILES = [
+  "001_init.sql",
+  "002_referral_rewards_unique.sql",
+  "003_deposit_provider_ref_unique.sql",
+  "004_withdrawal_tx_hash_unique.sql",
+];
 
 /**
  * Dual-mode data layer: Cloudflare D1 in production (Workers), local SQLite in

@@ -10,15 +10,15 @@ import {
 } from "./icons";
 
 const INPUT_BASE =
-  "h-11 w-full rounded-lg border bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500";
+  "h-12 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:bg-slate-950 dark:text-slate-50 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900";
 const INPUT_IDLE =
-  "border-slate-200 focus:border-slate-400 focus:ring-slate-900/5 dark:border-slate-700 dark:focus:border-slate-500";
+  "border-slate-200 focus:border-emerald-700 focus-visible:ring-emerald-700/15 dark:border-slate-700 dark:focus:border-emerald-400 dark:focus-visible:ring-emerald-400/15";
 const INPUT_ERROR =
-  "border-red-300 focus:border-red-400 focus:ring-red-500/10 dark:border-red-800 dark:focus:border-red-600";
+  "border-red-300 focus:border-red-500 focus-visible:ring-red-500/15 dark:border-red-800 dark:focus:border-red-500";
 const INPUT_OK =
-  "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-500/10 dark:border-emerald-800";
+  "border-emerald-400 focus:border-emerald-600 focus-visible:ring-emerald-600/15 dark:border-emerald-700";
 
-const LABEL = "text-sm font-medium text-slate-700 dark:text-slate-300";
+const LABEL = "text-sm font-semibold text-slate-800 dark:text-slate-200";
 
 export function AuthField({
   label,
@@ -45,28 +45,33 @@ export function AuthField({
   autoComplete?: string;
   onChange: (value: string) => void;
 }) {
+  const id = useId();
   const errorText = error?.trim() ? error : "";
   const state = errorText ? INPUT_ERROR : ok ? INPUT_OK : INPUT_IDLE;
+  const descriptionId = errorText ? `${id}-error` : hint ? `${id}-hint` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className={LABEL}>{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className={LABEL} htmlFor={id}>{label}</label>
       <input
+        id={id}
         value={value}
         type={type}
         placeholder={placeholder}
         disabled={disabled}
         autoComplete={autoComplete}
         aria-invalid={errorText ? true : undefined}
+        aria-describedby={descriptionId}
         className={`${INPUT_BASE} ${state}`}
         onChange={(event) => onChange(event.target.value)}
       />
       {errorText ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{errorText}</p>
+        <p id={`${id}-error`} className="text-xs font-medium text-red-700 dark:text-red-300">{errorText}</p>
       ) : hint ? (
         <p
-          className={`text-xs ${
-            hintError ? "text-red-600 dark:text-red-400" : "text-slate-500"
+          id={`${id}-hint`}
+          className={`text-xs leading-5 ${
+            hintError ? "text-red-700 dark:text-red-300" : "text-slate-500 dark:text-slate-400"
           }`}
         >
           {hint}
@@ -100,22 +105,26 @@ export function AuthPasswordField({
   onChange: (value: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
+  const id = useId();
   const errorText = error?.trim() ? error : "";
   const hasError = Boolean(errorText || invalid);
   const state = hasError ? INPUT_ERROR : ok ? INPUT_OK : INPUT_IDLE;
+  const descriptionId = errorText ? `${id}-error` : hint ? `${id}-hint` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className={LABEL}>{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className={LABEL} htmlFor={id}>{label}</label>
       <div className="relative">
         <input
+          id={id}
           value={value}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete={autoComplete}
           aria-invalid={hasError ? true : undefined}
-          className={`${INPUT_BASE} ${state} pr-11`}
+          aria-describedby={descriptionId}
+          className={`${INPUT_BASE} ${state} pr-12`}
           onChange={(event) => onChange(event.target.value)}
         />
         <button
@@ -123,15 +132,15 @@ export function AuthPasswordField({
           disabled={disabled}
           aria-label={visible ? "Hide password" : "Show password"}
           onClick={() => setVisible((current) => !current)}
-          className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-200"
         >
           <EyeIcon />
         </button>
       </div>
       {errorText ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{errorText}</p>
+        <p id={`${id}-error`} className="text-xs font-medium text-red-700 dark:text-red-300">{errorText}</p>
       ) : hint ? (
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p id={`${id}-hint`} className="text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</p>
       ) : null}
     </div>
   );
@@ -144,7 +153,6 @@ export function AuthActions({
   loading,
   secondaryLoading,
   disabled,
-  onPrimary,
   onSecondary,
 }: {
   primaryLabel: string;
@@ -153,16 +161,14 @@ export function AuthActions({
   loading?: boolean;
   secondaryLoading?: boolean;
   disabled?: boolean;
-  onPrimary: () => void;
   onSecondary?: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3 pt-1">
       <button
-        type="button"
+        type="submit"
         disabled={disabled || loading}
-        onClick={onPrimary}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800/30 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-lime-300 dark:text-emerald-950 dark:hover:bg-lime-200"
       >
         {loading ? <Spinner /> : null}
         <span>{loading && loadingLabel ? loadingLabel : primaryLabel}</span>
@@ -173,7 +179,7 @@ export function AuthActions({
           type="button"
           disabled={secondaryLoading}
           onClick={onSecondary}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           {secondaryLoading ? <Spinner /> : null}
           <span>{secondaryLabel}</span>

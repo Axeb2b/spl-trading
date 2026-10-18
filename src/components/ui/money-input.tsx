@@ -1,12 +1,5 @@
 import { cn } from "@/lib/utils";
 
-const UNITS = [
-  { value: "USD", label: "USD — US Dollar" },
-  { value: "USDT", label: "USDT — Tether" },
-  { value: "INR", label: "INR — Indian Rupee" },
-  { value: "EUR", label: "EUR — Euro" },
-] as const;
-
 type MoneyInputProps = {
   id: string;
   label: string;
@@ -21,8 +14,8 @@ type MoneyInputProps = {
   className?: string;
 };
 
-function formatUsd(cents: number): string {
-  return (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatAmount(cents: number, currency: string): string {
+  return `${currency} ${Math.abs(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function MoneyInput({
@@ -41,23 +34,25 @@ export function MoneyInput({
   const amount = Number.parseFloat(value);
   const cents = Number.isFinite(amount) ? Math.round(amount * 100) : null;
 
-  let validation: { tone: "danger" | "warning" | "success"; text: string } | null = null;
+  let validation: { tone: "danger" | "success"; text: string } | null = null;
   if (cents !== null && cents > 0) {
     if (minCents !== undefined && cents < minCents) {
-      validation = { tone: "danger", text: `Minimum is ${formatUsd(minCents)} ${currency}.` };
+      validation = { tone: "danger", text: `Minimum is ${formatAmount(minCents, currency)}.` };
     } else if (maxCents !== undefined && cents > maxCents) {
-      validation = { tone: "danger", text: `Maximum is ${formatUsd(maxCents)} ${currency}.` };
-    } else {
-      validation = { tone: "success", text: "Amount within limits." };
+      validation = { tone: "danger", text: `Maximum is ${formatAmount(maxCents, currency)}.` };
+    } else if (minCents !== undefined || maxCents !== undefined) {
+      validation = { tone: "success", text: "Amount is within the available limits." };
     }
   }
 
+  const describedBy = error ? `${id}-error` : validation ? `${id}-validation` : hint ? `${id}-hint` : undefined;
+
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-slate-700">
+    <div className={cn("flex flex-col gap-2", className)}>
+      <label htmlFor={id} className="text-sm font-semibold text-slate-800 dark:text-slate-200">
         {label}
       </label>
-      <div className="flex items-stretch gap-2">
+      <div className="relative">
         <input
           id={id}
           type="number"
@@ -69,45 +64,26 @@ export function MoneyInput({
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
           aria-invalid={Boolean(error) || validation?.tone === "danger"}
+          aria-describedby={describedBy}
           className={cn(
-            "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 outline-none transition",
-            "focus-visible:ring-2 focus-visible:ring-blue-500/40",
-            "disabled:cursor-not-allowed disabled:bg-slate-50",
+            "min-h-12 w-full rounded-xl border bg-white px-4 pr-16 font-mono text-base font-medium tabular-nums text-slate-900 outline-none transition placeholder:font-sans placeholder:text-slate-400 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900",
             error || validation?.tone === "danger"
-              ? "border-red-300 focus-visible:ring-red-500/40"
-              : "border-slate-300",
+              ? "border-red-300 focus:border-red-500 focus-visible:ring-red-500/15 dark:border-red-800"
+              : "border-slate-200 focus:border-emerald-700 focus-visible:ring-emerald-700/15 dark:border-slate-700 dark:focus:border-emerald-400 dark:focus-visible:ring-emerald-400/15",
           )}
         />
-        <select
-          aria-label={`${label} currency`}
-          defaultValue={currency}
-          disabled={disabled}
-          className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-        >
-          {UNITS.map((unit) => (
-            <option key={unit.value} value={unit.value}>
-              {unit.value}
-            </option>
-          ))}
-        </select>
+        <span aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {currency}
+        </span>
       </div>
       {error ? (
-        <p className="text-xs text-red-600">{error}</p>
+        <p id={`${id}-error`} className="text-xs font-medium text-red-700 dark:text-red-300">{error}</p>
       ) : validation ? (
-        <p
-          className={cn(
-            "text-xs",
-            validation.tone === "danger"
-              ? "text-red-600"
-              : validation.tone === "warning"
-                ? "text-amber-600"
-                : "text-emerald-600",
-          )}
-        >
+        <p id={`${id}-validation`} className={cn("text-xs", validation.tone === "danger" ? "font-medium text-red-700 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300")}>
           {validation.text}
         </p>
       ) : hint ? (
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p id={`${id}-hint`} className="text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</p>
       ) : null}
     </div>
   );

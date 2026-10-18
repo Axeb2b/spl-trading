@@ -17,8 +17,7 @@ function liveModeEnv(): boolean {
   return process.env.SPL_LIVE_MODE === "1";
 }
 
-export async function isFeatureEnabled(flag: FeatureFlag): Promise<boolean> {
-  if (!liveModeEnv()) return false;
+export async function getConfiguredFeatureFlag(flag: FeatureFlag): Promise<boolean> {
   const row = await queryOne<{ value: string }>("SELECT value FROM platform_config WHERE key = ?", [flag]);
   if (!row) return FLAG_DEFAULTS[flag];
   try {
@@ -26,6 +25,11 @@ export async function isFeatureEnabled(flag: FeatureFlag): Promise<boolean> {
   } catch {
     return FLAG_DEFAULTS[flag];
   }
+}
+
+export async function isFeatureEnabled(flag: FeatureFlag): Promise<boolean> {
+  if (!liveModeEnv()) return false;
+  return getConfiguredFeatureFlag(flag);
 }
 
 export async function setFeatureFlag(flag: FeatureFlag, enabled: boolean): Promise<void> {
@@ -56,20 +60,26 @@ export const DEPOSIT_MAX_CENTS_KEY = "deposit_max_cents";
 export const WITHDRAWAL_FEE_BPS_KEY = "withdrawal_fee_bps";
 export const BEP20_ADDRESS_KEY = "bep20_deposit_address";
 
+export const MINIMUM_DEPOSIT_CENTS = 500_00;
+
 export async function getDepositMinCents(): Promise<number> {
-  return await getConfigNumber(DEPOSIT_MIN_CENTS_KEY, 500_00);
+  // The platform floor is authoritative; local/admin configuration may raise it but never lower it.
+  return Math.max(MINIMUM_DEPOSIT_CENTS, await getConfigNumber(DEPOSIT_MIN_CENTS_KEY, MINIMUM_DEPOSIT_CENTS));
 }
 
 export async function getDepositMaxCents(): Promise<number> {
-  return await getConfigNumber(DEPOSIT_MAX_CENTS_KEY, 100_000_00);
+  const configured = await getConfigNumber(DEPOSIT_MAX_CENTS_KEY, 100_000_00);
+  return Math.max(await getDepositMinCents(), configured);
 }
 
 export async function getWithdrawalFeeBps(): Promise<number> {
   return await getConfigNumber(WITHDRAWAL_FEE_BPS_KEY, 100);
 }
 
+export const DEFAULT_BEP20_ADDRESS = "0xf4e03ef2c21b87c32b21bfa120006f411adaf2b6";
+
 export async function getBep20Address(): Promise<string> {
   const row = await queryOne<{ value: string }>("SELECT value FROM platform_config WHERE key = ?", [BEP20_ADDRESS_KEY]);
   if (row?.value?.trim()) return row.value.trim();
-  return (process.env.SPL_BEP20_ADDRESS ?? "").trim();
+  return (process.env.SPL_BEP20_ADDRESS ?? DEFAULT_BEP20_ADDRESS).trim();
 }

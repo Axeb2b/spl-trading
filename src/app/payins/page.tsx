@@ -7,7 +7,7 @@ import { listDepositOrders } from "@/lib/deposits";
 
 export const metadata: Metadata = {
   title: "Payins",
-  description: "Monitor incoming payin transactions",
+  description: "Search and review USDT deposit order statuses and references.",
 };
 
 export default async function PayinsPage() {
@@ -15,6 +15,7 @@ export default async function PayinsPage() {
   if (!user) redirect("/auth/sign-in");
 
   const rows: PayinRow[] = (await listDepositOrders(user.id)).map((order) => ({
+    id: order.id,
     reference: order.internalRef,
     amountCents: order.amountCents,
     network: order.network,
@@ -23,7 +24,7 @@ export default async function PayinsPage() {
   }));
 
   return (
-    <CabinetShell title="Payins" email={user.email} name={user.name}>
+    <CabinetShell title="Deposits" email={user.email} name={user.name}>
       <PayinsView rows={rows} />
     </CabinetShell>
   );

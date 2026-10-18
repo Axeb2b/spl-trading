@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldAlert, ExternalLink } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { CabinetShell } from "@/components/sites/spl-trading/cabinet/cabinet-shell";
+import { AdminOperations } from "@/components/sites/spl-trading/cabinet/admin-operations";
 import { requirePageUser } from "@/lib/page-user";
 
 export const metadata: Metadata = {
-  title: "Admin",
-  description: "Administrative console",
+  title: "Admin operations",
+  description: "Configure deposit gates and manually review verified on-chain payments and payout operations.",
 };
-
-const ADMIN_LINKS = [
-  { href: "/api/v1/admin/overview", label: "Platform overview", hint: "User, order and volume totals" },
-  { href: "/api/v1/admin/deposits", label: "Deposit orders", hint: "Verify or reject incoming deposits" },
-  { href: "/api/v1/admin/withdrawals", label: "Withdrawal requests", hint: "Approve, process and complete payouts" },
-  { href: "/api/v1/admin/config", label: "Config & feature flags", hint: "Limits, fees and live-mode gates" },
-];
 
 export default async function AdminPage() {
   const user = await requirePageUser();
@@ -23,56 +18,25 @@ export default async function AdminPage() {
   if (user.role !== "admin") {
     return (
       <CabinetShell title="Admin" email={user.email} name={user.name}>
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <span className="mx-auto grid size-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
-            <ShieldAlert className="size-6" aria-hidden />
+        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm shadow-slate-950/[0.025] dark:border-slate-800 dark:bg-slate-900 sm:p-12">
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+            <ShieldAlert className="size-5" aria-hidden />
           </span>
-          <h1 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-50">
-            Access restricted
-          </h1>
-          <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-            Your account does not hold the admin role. The administrative console is restricted to
-            staff accounts.
+          <h2 className="mt-4 text-lg font-semibold text-slate-950 dark:text-white">Access restricted</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
+            This account does not have the admin role. Deposit review and payout operations are available to authorized staff only.
           </p>
-          <a
-            href="https://moospage.com/users"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            Open external admin
-            <ExternalLink className="size-3.5" aria-hidden />
-          </a>
-        </div>
+          <Link href="/" className="mt-5 inline-flex min-h-10 items-center justify-center rounded-full bg-emerald-900 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:bg-lime-300 dark:text-emerald-950 dark:hover:bg-lime-200">
+            Return to overview
+          </Link>
+        </section>
       </CabinetShell>
     );
   }
 
   return (
-    <CabinetShell title="Admin" email={user.email} name={user.name}>
-      <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-          Admin console
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-500">
-          Signed in as <span className="font-medium text-slate-700 dark:text-slate-300">{user.email}</span>{" "}
-          with the <span className="font-medium text-slate-700 dark:text-slate-300">admin</span> role.
-        </p>
-      </header>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {ADMIN_LINKS.map((link) => (
-          <a
-            key={link.href}
-            href={link.href}
-            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
-          >
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-50">{link.label}</p>
-            <p className="mt-0.5 text-xs text-slate-500">{link.hint}</p>
-            <p className="mt-2 font-mono text-[11px] text-slate-400">{link.href}</p>
-          </a>
-        ))}
-      </div>
+    <CabinetShell title="Admin operations" email={user.email} name={user.name}>
+      <AdminOperations />
     </CabinetShell>
   );
 }

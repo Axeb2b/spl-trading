@@ -62,7 +62,7 @@ Copy `.env.example` to `.env.local` (local) and adjust. **`.env.example` contain
 | `SPL_DB_PATH` | Absolute path to the SQLite database file (defaults to `./data/spl.sqlite`). |
 | `SPL_DATA_DIR` | Directory holding the database file; used when `SPL_DB_PATH` is unset. |
 | `SPL_LIVE_MODE` | Set to `1` **only** in a controlled production environment after compliance sign-off. When unset or not `1`, all money-movement feature flags are forced off regardless of DB config. |
-| `SPL_BEP20_ADDRESS` | Fallback public BEP-20 receiving address shown to customers. The admin-configurable DB key `bep20_deposit_address` takes precedence when set. |
+| `SPL_BEP20_ADDRESS` | Optional public BEP-20 receiving-address override. The admin-configurable DB key `bep20_deposit_address` takes precedence; otherwise the supplied app default is used. This is not a private key. |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Optional inputs for `npm run seed:admin` (otherwise passed as CLI args or generated). |
 
 Deployment/DB-layer placeholders (`CLOUDFLARE_*`, D1 `database_id`) and Telegram bot placeholders (`TELEGRAM_*`) are present in `.env.example` as **commented-out, not-yet-active** entries for upcoming work. The D1 `database_id` belongs in `wrangler.jsonc`, not in `.env.example`.
@@ -94,7 +94,7 @@ There is no separate unit-test suite; `npm run check` is the gate.
 - **Routing** — App Router under `src/app/`. Public auth pages live in `src/app/auth/*`; the cabinet (`/`, `/payins`, `/payouts`, `/accounts`, `/onboarding`, `/report`) and `/admin` are protected. API routes live under `src/app/api/v1/*`.
 - **Auth** — `src/lib/session.ts` signs/verifies the HMAC `spl_session` cookie. `src/proxy.ts` is the Next.js 16 route guard (middleware's successor here): it redirects anonymous users to `/auth/sign-in` and signed-in users away from the auth pages. Per-route authorization still happens in each API route.
 - **Data layer** — `src/lib/db.ts` opens the SQLite database (`node:sqlite`) and exposes four helpers: `queryAll`, `queryOne`, `execute`, `withTransaction`. Feature code goes through these helpers rather than touching the driver directly.
-- **Migrations** — SQL files in `src/lib/migrations/` (`001_init.sql`, then `002_referral_rewards_unique.sql`), tracked in a `_migrations` table. The local SQLite driver applies them in order at first use (dev/test/build); D1 never self-migrates — apply with `npx wrangler d1 migrations apply spl` (`wrangler.jsonc` sets `migrations_dir: src/lib/migrations`, and the `deploy.yml` CI job runs the command before deploy). The seed script mirrors the same ordered list.
+- **Migrations** — SQL files in `src/lib/migrations/` (`001_init.sql` through `004_withdrawal_tx_hash_unique.sql`), tracked in a `_migrations` table. The local SQLite driver applies them in order at first use (dev/test/build); D1 never self-migrates — apply with `npx wrangler d1 migrations apply spl` (`wrangler.jsonc` sets `migrations_dir: src/lib/migrations`, and the `deploy.yml` CI job runs the command before deploy). The seed script mirrors the same ordered list.
 
 ## Deployment
 

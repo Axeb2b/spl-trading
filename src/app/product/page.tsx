@@ -25,17 +25,17 @@ const MODULES = [
   {
     title: "Deposits (pay-ins)",
     icon: Wallet,
-    body: "You create a deposit order for an amount, send USDT on the BEP-20 network to the address shown in the dialog, and the balance is credited once the transfer has been independently verified. Unpaid orders expire and have to be created again.",
+    body: "Where deposits are enabled, create an order for an amount and send USDT on the BEP-20 network to the address shown inside the signed-in dialog. The balance is credited only after independent verification; an unpaid order expires."
   },
   {
     title: "Withdrawals (payouts)",
     icon: ArrowUpFromLine,
-    body: "You request a payout to an account you have already saved. The request carries its own fee and reference and moves through pending, approved, processing and completed — or it is rejected with a reason and the hold released back to your balance.",
+    body: "Payout requests carry a reference and a fee, and can move through pending, approved, processing and completed—or be rejected with a reason. Request and destination tools depend on your deployment and may not be available."
   },
   {
     title: "Accounts",
     icon: Landmark,
-    body: "The destinations your payouts reach: bank accounts and e-wallets stored once and reused, so a payout request always points at something you set up deliberately.",
+    body: "The Accounts area explains payout destination handling. A BEP-20 address is entered with each payout request and is not saved by this build; payout requests require a verified $500 deposit and operator review."
   },
   {
     title: "Reports",
@@ -45,7 +45,7 @@ const MODULES = [
   {
     title: "Onboarding",
     icon: ListChecks,
-    body: "A guided checklist covering the steps that get an account ready: connecting Telegram, funding it, adding a payout account and working through the remaining setup items.",
+    body: "A short orientation to the cabinet, the order-status pages, and the public fee and risk information. It does not require unsupported identity checks or integrations."
   },
   {
     title: "Referrals",
@@ -69,7 +69,7 @@ export default function ProductPage() {
       <PublicPageIntro
         eyebrow="Product"
         title="What the cabinet does"
-        lede="Six areas cover the whole flow: getting money in, keeping the destinations you pay out to, getting money out, and reading exactly what happened."
+        lede="The cabinet centers on deposits, payout records, and an itemized ledger. Other areas depend on the capabilities enabled for your deployment."
       />
 
       <PublicSection index="01 — Modules" title="The areas of the cabinet">

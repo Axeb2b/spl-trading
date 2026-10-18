@@ -8,26 +8,21 @@ export function SupportSections() {
       <PublicSection
         index="01 — Channels"
         title="How to reach support"
-        lede="Support is handled through your account. This public site deliberately publishes no phone number, no email address and no channel handle."
+        lede="Support availability depends on the platform deployment. This public site deliberately publishes no unverified phone number, email address, or channel handle."
       >
         <div className="grid gap-4 md:grid-cols-2">
           <PublicCard
             title="In-app support"
             icon={<LifeBuoy className="size-4" aria-hidden />}
           >
-            Sign in and open the “Need help?” panel on the Onboarding screen of your cabinet.
-            Support is raised from inside your account, where it sits next to the records it refers
-            to — no need to re-describe deposits and payouts.
+            If your deployment includes an in-app support entry, open it from your signed-in cabinet and include the order reference. Keeping the request beside your account makes it easier to identify the deposit or payout you mean.
           </PublicCard>
 
           <PublicCard
             title="Telegram"
             icon={<MessageCircle className="size-4" aria-hidden />}
           >
-            The product&apos;s own onboarding copy points to Telegram as the support channel and
-            describes it as available around the clock. No handle for it is published on this
-            site — start from the in-app entry point instead, so a request stays tied to your
-            signed-in account.
+            Some deployments connect Telegram for account support. Use a Telegram link shown inside your signed-in cabinet if one is available; we do not publish an unverified handle or promise support hours.
           </PublicCard>
         </div>
 

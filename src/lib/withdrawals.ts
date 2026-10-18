@@ -1,4 +1,4 @@
-import { newId, nowIso, execute, runBatch, type SqlStatement } from "./db";
+import { newId, nowIso, execute, runBatch, queryOne, type SqlStatement } from "./db";
 import { entryStatements, transactionStatement } from "./ledger";
 import { WithdrawalError, getWithdrawalById } from "./withdrawal-view";
 
@@ -14,13 +14,26 @@ export async function startProcessing(withdrawalId: string): Promise<void> {
   await transition(withdrawalId, "approved", "processing", null);
 }
 
-/** ONLY call after the payout provider confirms actual settlement. */
+/** ONLY call after an authorized operator independently confirms actual on-chain settlement. */
 export async function completeWithdrawal(withdrawalId: string, txHash: string): Promise<void> {
   const w = await getWithdrawalById(withdrawalId);
   if (!w) throw new WithdrawalError("Withdrawal not found.", "NOT_FOUND", 404);
-  if (w.status === "completed") return;
+  if (w.status === "completed") {
+    if (w.txHash === txHash) return;
+    throw new WithdrawalError("This payout is already completed with a different BSC transaction.", "INVALID_STATE", 409);
+  }
   if (w.status !== "processing") {
     throw new WithdrawalError(`Cannot complete from '${w.status}'.`, "INVALID_STATE", 409);
+  }
+  if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+    throw new WithdrawalError("A valid BSC transaction hash is required to complete a payout.", "INVALID_STATE", 400);
+  }
+  const transactionAlreadyUsed = await queryOne<{ id: string }>(
+    "SELECT id FROM withdrawal_requests WHERE tx_hash = ? AND id <> ? LIMIT 1",
+    [txHash, withdrawalId],
+  );
+  if (transactionAlreadyUsed) {
+    throw new WithdrawalError("This BSC transaction is already associated with another payout.", "INVALID_STATE", 409);
   }
 
   const now = nowIso();
@@ -97,8 +110,8 @@ export async function rejectWithdrawal(
 ): Promise<void> {
   const w = await getWithdrawalById(withdrawalId);
   if (!w) throw new WithdrawalError("Withdrawal not found.", "NOT_FOUND", 404);
-  if (w.status === "completed") {
-    throw new WithdrawalError("Cannot reject a completed withdrawal.", "INVALID_STATE", 409);
+  if (w.status !== "pending" && w.status !== "approved") {
+    throw new WithdrawalError("Only pending or approved payouts can be rejected before processing.", "INVALID_STATE", 409);
   }
 
   const now = nowIso();
@@ -106,7 +119,7 @@ export async function rejectWithdrawal(
   const [claim] = await runBatch([
     {
       sql: `UPDATE withdrawal_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, reject_reason = ?, updated_at = ?
-            WHERE id = ? AND status <> 'completed'`,
+            WHERE id = ? AND status IN ('pending','approved')`,
       params: [reviewedBy, now, reason, now, withdrawalId],
     },
     transactionStatement(
@@ -134,8 +147,8 @@ export async function rejectWithdrawal(
 
   const current = await getWithdrawalById(withdrawalId);
   if (!current) throw new WithdrawalError("Withdrawal not found.", "NOT_FOUND", 404);
-  if (current.status === "completed") {
-    throw new WithdrawalError("Cannot reject a completed withdrawal.", "INVALID_STATE", 409);
+  if (current.status !== "pending" && current.status !== "approved") {
+    throw new WithdrawalError(`Cannot reject a payout in '${current.status}' state.`, "INVALID_STATE", 409);
   }
 }
 

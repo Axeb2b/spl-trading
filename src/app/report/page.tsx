@@ -7,7 +7,7 @@ import { getUserLedgerEntries } from "@/lib/ledger";
 
 export const metadata: Metadata = {
   title: "Report",
-  description: "Export and review transaction reports",
+  description: "Search the account ledger by reference, type, and date.",
 };
 
 type RawLedgerEntry = {
@@ -28,6 +28,7 @@ export default async function ReportPage() {
   const entries = (await getUserLedgerEntries(user.id, 200)) as RawLedgerEntry[];
 
   const rows: LedgerRow[] = entries.map((entry) => ({
+    id: entry.id,
     reference: entry.provider_ref ?? entry.id.slice(0, 8).toUpperCase(),
     type: entry.type,
     // Credit increases the user's cash; a debit reduces it.
