@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "@/components/sites/spl-trading/cabinet/cabinet.css";
 import { ThemeApplier } from "@/components/sites/spl-trading/theme-toggle";
 import { AppToaster } from "@/components/ui/app-toaster";
 
@@ -24,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-auth-theme="light" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <ThemeApplier />
         {children}

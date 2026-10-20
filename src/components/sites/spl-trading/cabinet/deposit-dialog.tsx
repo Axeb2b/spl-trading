@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MoneyInput } from "@/components/ui/money-input";
 import { QrPanel, type QrPanelData } from "@/components/ui/qr-panel";
@@ -25,6 +25,7 @@ export function DepositDialog({ onClose }: DepositDialogProps) {
   const [order, setOrder] = useState<DepositOrderDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const amountRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +41,24 @@ export function DepositDialog({ onClose }: DepositDialogProps) {
       cancelled = true;
     };
   }, []);
+
+  // Escape closes the dialog, and the page behind it must not scroll.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (destination?.configured) amountRef.current?.focus();
+  }, [destination?.configured]);
 
   async function createOrder() {
     const cents = Math.round(Number.parseFloat(amount) * 100);
@@ -76,19 +95,24 @@ export function DepositDialog({ onClose }: DepositDialogProps) {
     }
   }
 
+  const unavailable = destination !== null && !destination.configured;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Deposit funds"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-5">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close deposit dialog"
-          className="absolute right-3 top-3 rounded-md px-2 py-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          className="absolute right-2 top-2 grid size-11 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
         >
           ✕
         </button>
@@ -111,6 +135,26 @@ export function DepositDialog({ onClose }: DepositDialogProps) {
               Keep your reference for support requests. Verification requires a confirmed
               transaction on {destination.network}.
             </p>
+          </div>
+        ) : unavailable ? (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Deposit funds</h2>
+              <p className="text-sm text-slate-500">
+                Fund your account with USDT on BNB Smart Chain (BEP-20).
+              </p>
+            </div>
+            <EmptyState
+              title="Deposits are not available yet"
+              description="No receiving address is configured. Contact support to fund your account."
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -135,18 +179,11 @@ export function DepositDialog({ onClose }: DepositDialogProps) {
             <button
               type="button"
               disabled={loading}
-              onClick={createOrder}
+              onClick={() => void createOrder()}
               className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
             >
               {loading ? "Creating order…" : "Create deposit order"}
             </button>
-
-            {!destination?.configured ? (
-              <EmptyState
-                title="Deposits are not available yet"
-                description="No receiving address is configured. Contact support to fund your account."
-              />
-            ) : null}
           </div>
         )}
       </div>

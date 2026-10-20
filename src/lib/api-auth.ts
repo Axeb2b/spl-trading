@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { readSessionToken, SESSION_COOKIE, type SessionPayload } from "./session";
+import { resolveSession, SESSION_COOKIE, type SessionPayload } from "./session";
 import { getUserById, type LocalUser } from "./auth";
 
-export function getSessionFromRequest(request: NextRequest): SessionPayload | null {
+export async function getSessionFromRequest(request: NextRequest): Promise<SessionPayload | null> {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  return readSessionToken(token);
+  return resolveSession(token);
 }
 
 export async function getLocalUser(request: NextRequest): Promise<LocalUser | null> {
-  const session = getSessionFromRequest(request);
+  const session = await getSessionFromRequest(request);
   if (!session?.userId) return null;
   return getUserById(session.userId);
 }

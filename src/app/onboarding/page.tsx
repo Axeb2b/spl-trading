@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   if (!user) redirect("/auth/sign-in");
 
   return (
-    <CabinetShell title="Onboarding" email={user.email} name={user.name}>
+    <CabinetShell title="Onboarding" email={user.email} name={user.name} role={user.role}>
       <OnboardingView />
     </CabinetShell>
   );

@@ -1,5 +1,7 @@
 /** Pure display formatters. All money values are integer cents. */
 
+import { formatIst } from "@/lib/time/ist";
+
 export function formatUsd(cents: number): string {
   const sign = cents < 0 ? "-" : "";
   return `${sign}$${(Math.abs(cents) / 100).toLocaleString("en-US", {
@@ -8,18 +10,31 @@ export function formatUsd(cents: number): string {
   })}`;
 }
 
+/**
+ * Timestamps are stored in UTC and displayed in Asia/Kolkata (IST, UTC+05:30).
+ *
+ * The previous implementation used `toLocaleString("en-US", …)`, which renders
+ * in the *server's* zone (UTC on Workers) with no offset and no suffix — so
+ * every timestamp in the cabinet was ambiguous. IST is a fixed +05:30 offset
+ * with no DST, so the conversion is exact arithmetic.
+ */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  try {
+    return formatIst(iso, "full");
+  } catch {
+    return "—";
+  }
+}
+
+/** Date-only IST label — `21 Oct 2026`. */
+export function formatDateOnly(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    return formatIst(iso, "date");
+  } catch {
+    return "—";
+  }
 }
 
 const LEDGER_LABELS: Record<string, string> = {

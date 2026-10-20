@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const UNITS = [
@@ -7,7 +8,7 @@ const UNITS = [
   { value: "EUR", label: "EUR — Euro" },
 ] as const;
 
-type MoneyInputProps = {
+type MoneyInputBaseProps = {
   id: string;
   label: string;
   value: string;
@@ -21,23 +22,28 @@ type MoneyInputProps = {
   className?: string;
 };
 
+export type MoneyInputProps = MoneyInputBaseProps;
+
 function formatUsd(cents: number): string {
   return (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function MoneyInput({
-  id,
-  label,
-  value,
-  onChange,
-  currency = "USD",
-  minCents,
-  maxCents,
-  error,
-  hint,
-  disabled,
-  className,
-}: MoneyInputProps) {
+export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputBaseProps>(function MoneyInput(
+  {
+    id,
+    label,
+    value,
+    onChange,
+    currency = "USD",
+    minCents,
+    maxCents,
+    error,
+    hint,
+    disabled,
+    className,
+  },
+  ref,
+) {
   const amount = Number.parseFloat(value);
   const cents = Number.isFinite(amount) ? Math.round(amount * 100) : null;
 
@@ -60,6 +66,7 @@ export function MoneyInput({
       <div className="flex items-stretch gap-2">
         <input
           id={id}
+          ref={ref}
           type="number"
           inputMode="decimal"
           step="0.01"
@@ -111,4 +118,4 @@ export function MoneyInput({
       ) : null}
     </div>
   );
-}
+});

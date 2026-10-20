@@ -12,12 +12,19 @@ function normalize(theme: string | null): AuthTheme {
   return theme === "dark" ? "dark" : "light";
 }
 
+/**
+ * Dark mode has ONE mechanism: the `.dark` class on <html> (plus the matching
+ * `color-scheme`).
+ *
+ * The previous build also set a separate `data-*` theme attribute, and the
+ * captured stylesheet keyed off that attribute while the shadcn kit keyed off
+ * `.dark` — the two implementations disagreed, so the header darkened while
+ * the body stayed light. That attribute is gone for good.
+ */
 function applyTheme(theme: AuthTheme) {
   const root = document.documentElement;
-  root.dataset.authTheme = theme;
-  // The captured CSS keys off [data-auth-theme]; the shadcn UI kit keys off .dark.
-  // Sync both so a single toggle themes the auth pages, the cabinet, and the new components.
   root.classList.toggle("dark", theme === "dark");
+  root.style.colorScheme = theme === "dark" ? "dark" : "light";
 }
 
 function subscribeTheme(onChange: () => void) {
@@ -26,7 +33,7 @@ function subscribeTheme(onChange: () => void) {
 }
 
 function getThemeSnapshot(): AuthTheme {
-  return normalize(document.documentElement.dataset.authTheme ?? null);
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 function getThemeServerSnapshot(): AuthTheme {

@@ -23,7 +23,7 @@ export default async function PayoutsPage() {
   }));
 
   return (
-    <CabinetShell title="Payouts" email={user.email} name={user.name}>
+    <CabinetShell title="Payouts" email={user.email} name={user.name} role={user.role}>
       <PayoutsView rows={rows} />
     </CabinetShell>
   );

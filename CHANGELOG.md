@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Asia/Kolkata (IST, UTC+05:30) as the product timezone.** `src/lib/time/ist.ts` owns the conversion, `src/lib/format.ts` renders every timestamp through it, and report/date-filter boundaries use IST calendar days. Timestamps now carry an explicit `IST` suffix instead of rendering in the server's UTC zone.
+- **Realtime updates over Server-Sent Events.** `GET /api/v1/stream` multiplexes every live surface (deposits, payouts, setup progress, overview) over one stream per client, backed by the new `events` table. The client resumes with `Last-Event-ID`, degrades to polling when the stream cannot be established, and the header indicator now reports the real transport state instead of a static "Online" pill.
+- **Server-side session revocation.** Sessions live in the new `sessions` table; the signed cookie references a row, so sign-out ends the session instead of only clearing the browser's copy. A replayed cookie after sign-out now returns 401.
+- `GET /api/v1/onboarding` — setup progress derived from verifiable facts, with the step list as the single source of truth for the page and the banner.
+- `POST /api/v1/auth/password/forgot` — password recovery is now a real support handoff that records a request, instead of a form that claimed to send a code and stopped.
+- Unit tests (`npm test`) for the timezone and relative-time rules, and `npm run check:style` — a build-failing guard against the copy and layout regressions listed below.
+
 ### Fixed
+- **Removed the legacy captured stylesheet** (`cabinet.css`) from the global bundle. It was an unlayered Tailwind v3 build loaded next to the current layered v4 build; unlayered rules outrank layered utilities, which collapsed the stat grid to one column, overlapped the search icon, shrank the dialog CTA, hid the banner label, flattened the progress bar and left dark mode half-applied. No component referenced any of its classes.
+- Removed the external admin link to `https://moospage.com/users` — that console is not owned by the client. `/admin` is role-gated in-app and non-admins get an in-app denied state.
+- Removed the seeded "Demo environment — no real funds are moved", "Local clone" and "Your account UI preview is ready" copy, and the three hardcoded notifications in the header and dashboard. The bell now lists real ledger activity and the dashboard shows real account status.
+- The onboarding counter and progress are no longer hardcoded ("Onboarding 1 of 12"); they come from the API, the 12 steps are numbered consistently, and the deposit step quotes the configured minimum instead of "2000 USDT".
+- The deposit dialog no longer offers an amount form when no collection address is configured, closes on Escape and on an overlay click, locks background scroll, and has a 44px close control.
+- Dark mode has a single mechanism (`.dark` on `<html>` plus `color-scheme`); the parallel `data-auth-theme` attribute is gone.
+- Security headers are now sent on every response: CSP, HSTS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy`.
 - Count the README token badge in CI so it reflects the current default branch instead of a stale hosted count.
 
 ## [0.6.1] - 2026-10-05

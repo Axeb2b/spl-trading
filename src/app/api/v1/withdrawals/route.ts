@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { createWithdrawalRequest, listWithdrawals, WithdrawalError } from "@/lib/withdrawals";
 import { isFeatureEnabled } from "@/lib/flags";
+import { emitEvent } from "@/lib/realtime/events";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAuth(request);
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       destinationType: body.destinationType,
       destinationRef: body.destinationRef,
     });
+    // The realtime stream announces the new request; the cabinet refreshes from it.
+    await emitEvent(auth.user.id, "withdrawal.updated", { id: withdrawal.id, status: withdrawal.status });
+    await emitEvent(auth.user.id, "overview.updated", { reason: "withdrawal_requested" });
     return NextResponse.json({ withdrawal }, { status: 201 });
   } catch (err) {
     if (err instanceof WithdrawalError) {

@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { createDepositOrder, listDepositOrders, DepositError } from "@/lib/deposits";
 import { isFeatureEnabled, getDepositMinCents, getDepositMaxCents } from "@/lib/flags";
 import { getPaymentDestination } from "@/lib/payment-destination";
+import { emitEvent } from "@/lib/realtime/events";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAuth(request);
@@ -45,6 +46,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       network: body.network,
     });
     const destination = await getPaymentDestination();
+    // The realtime stream announces the new order; the cabinet refreshes from it.
+    await emitEvent(auth.user.id, "deposit.updated", { id: order.id, status: order.status });
+    await emitEvent(auth.user.id, "overview.updated", { reason: "deposit_created" });
     return NextResponse.json({ deposit: order, destination }, { status: 201 });
   } catch (err) {
     if (err instanceof DepositError) {

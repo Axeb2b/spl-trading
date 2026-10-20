@@ -76,7 +76,7 @@ const SECTIONS: LegalSection[] = [
   {
     heading: "Demo and verification caveats",
     paragraphs: [
-      "The sign-in screen carries the line: “Demo environment — no real funds are moved.” Where a deployment runs that way, balances, deposits and payouts are simulated and have no monetary value, and nothing done there can be withdrawn.",
+      "Some deployments run without live mode switched on at all. Where that is the case, balances, deposits and payouts are simulated and have no monetary value, and nothing done there can be withdrawn. The cabinet tells you which mode it is in: the indicator in the header reports the live status of your connection, and money-movement actions are disabled while the feature is off.",
       "Even where the platform is live, your balance reflects a verified transfer rather than a claim you make: verification is what stands between an unconfirmed payment and a credited one, and it can decline it.",
       "These public pages describe how the product is built and configured. They publish no performance figures, no user counts and no volume statistics, because none are defined in the product itself.",
     ],

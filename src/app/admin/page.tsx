@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldAlert, ExternalLink } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { CabinetShell } from "@/components/sites/spl-trading/cabinet/cabinet-shell";
 import { requirePageUser } from "@/lib/page-user";
 
@@ -22,7 +23,7 @@ export default async function AdminPage() {
 
   if (user.role !== "admin") {
     return (
-      <CabinetShell title="Admin" email={user.email} name={user.name}>
+      <CabinetShell title="Admin" email={user.email} name={user.name} role={user.role}>
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <span className="mx-auto grid size-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
             <ShieldAlert className="size-6" aria-hidden />
@@ -34,22 +35,19 @@ export default async function AdminPage() {
             Your account does not hold the admin role. The administrative console is restricted to
             staff accounts.
           </p>
-          <a
-            href="https://moospage.com/users"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          <Link
+            href="/"
+            className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            Open external admin
-            <ExternalLink className="size-3.5" aria-hidden />
-          </a>
+            Back to dashboard
+          </Link>
         </div>
       </CabinetShell>
     );
   }
 
   return (
-    <CabinetShell title="Admin" email={user.email} name={user.name}>
+    <CabinetShell title="Admin" email={user.email} name={user.name} role={user.role}>
       <header className="mb-5">
         <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
           Admin console

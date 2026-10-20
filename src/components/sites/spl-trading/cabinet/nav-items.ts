@@ -13,8 +13,9 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/report", label: "Report", icon: "pi-file-arrow-up" },
 ];
 
-export const NOTIFICATIONS = [
-  { kind: "info", text: "Verification pending. Complete Telegram step." },
-  { kind: "warn", text: "Deposit is required before any trading operations." },
-  { kind: "success", text: "Your account UI preview is ready." },
-] as const;
+/**
+ * The bell shows real ledger activity, not seeded copy. The previous build
+ * shipped three hardcoded strings ("Verification pending…", "Your account UI
+ * preview is ready.") that had nothing to do with the signed-in account.
+ */
+export const ADMIN_NAV_ITEM: NavItem = { href: "/admin", label: "Admin", icon: "pi-shield" };

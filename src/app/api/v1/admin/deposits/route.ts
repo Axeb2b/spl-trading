@@ -4,6 +4,8 @@ import { queryAll } from "@/lib/db";
 import { creditVerifiedDeposit, rejectDeposit, DepositError } from "@/lib/deposits";
 import { audit } from "@/lib/audit";
 import { isFeatureEnabled } from "@/lib/flags";
+import { emitEvent } from "@/lib/realtime/events";
+import { getDepositOrderById } from "@/lib/deposits";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
@@ -44,11 +46,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         providerRef: body.providerRef,
       });
       await audit({ actorId: auth.user.id, actorRole: "admin", action: "deposit.verify", targetType: "deposit", targetId: body.depositId, metadata: { alreadyCredited: result.alreadyCredited } });
+      // The owner sees the credit land without a reload.
+      const order = await getDepositOrderById(body.depositId);
+      if (order) {
+        await emitEvent(order.userId, "deposit.updated", { id: order.id, status: order.status });
+        await emitEvent(order.userId, "overview.updated", { reason: "deposit_credited" });
+      }
       return NextResponse.json({ success: true, alreadyCredited: result.alreadyCredited });
     }
     if (body.action === "reject") {
       await rejectDeposit(body.depositId, auth.user.id, body.reason ?? "Rejected by admin");
       await audit({ actorId: auth.user.id, actorRole: "admin", action: "deposit.reject", targetType: "deposit", targetId: body.depositId });
+      const rejected = await getDepositOrderById(body.depositId);
+      if (rejected) {
+        await emitEvent(rejected.userId, "deposit.updated", { id: rejected.id, status: rejected.status });
+      }
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });

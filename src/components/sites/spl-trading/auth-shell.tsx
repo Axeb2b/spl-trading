@@ -90,7 +90,7 @@ export function AuthShell({
         </div>
 
         <p className="relative text-xs text-slate-500">
-          Demo environment — no real funds are moved.
+          Balances are shown in USD. Deposits are credited after on-chain verification.
         </p>
       </aside>
 

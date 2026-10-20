@@ -14,7 +14,7 @@ export default async function AccountsPage() {
   if (!user) redirect("/auth/sign-in");
 
   return (
-    <CabinetShell title="Accounts" email={user.email} name={user.name}>
+    <CabinetShell title="Accounts" email={user.email} name={user.name} role={user.role}>
       <AccountsView />
     </CabinetShell>
   );

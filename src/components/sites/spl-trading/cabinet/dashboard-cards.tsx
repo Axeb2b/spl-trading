@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Wallet, TrendingUp, ArrowLeftRight, Lock } from "lucide-react";
-import { NOTIFICATIONS } from "./nav-items";
 import { DepositDialog } from "./deposit-dialog";
 import { StatCard } from "@/components/ui/stat-card";
 import { formatUsd } from "@/lib/format";
+import { useRealtime } from "@/hooks/use-realtime";
 
 const MESSAGE_TONE: Record<string, string> = {
   info: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200",
@@ -21,10 +21,75 @@ export type DashboardSummary = {
   transactionCount: number;
 };
 
+type AccountStatus = {
+  kind: "info" | "warn" | "success";
+  text: string;
+};
+
 export function DashboardCards({ summary }: { summary: DashboardSummary }) {
   const [depositOpen, setDepositOpen] = useState(false);
+  const [status, setStatus] = useState<AccountStatus[]>([]);
   // Real state, not decoration: the lock clears once a deposit is credited.
   const locked = !summary.hasCreditedDeposit;
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [onboardingRes, depositsRes] = await Promise.all([
+          fetch("/api/v1/onboarding", { cache: "no-store" }),
+          fetch("/api/v1/deposits", { cache: "no-store" }),
+        ]);
+        if (!onboardingRes.ok || !depositsRes.ok) return;
+        const onboarding = (await onboardingRes.json()) as {
+          completed: number;
+          total: number;
+          percent: number;
+        };
+        const deposits = (await depositsRes.json()) as {
+          destination?: { configured: boolean };
+        };
+        if (cancelled) return;
+
+        const next: AccountStatus[] = [];
+        if (onboarding.completed < onboarding.total) {
+          next.push({
+            kind: "info",
+            text: `Setup is ${onboarding.percent}% complete — ${onboarding.completed} of ${onboarding.total} steps done.`,
+          });
+        } else {
+          next.push({ kind: "success", text: "Setup is complete." });
+        }
+        if (deposits.destination?.configured === false) {
+          next.push({
+            kind: "warn",
+            text: "Deposits are temporarily unavailable — no collection address is configured.",
+          });
+        }
+        if (!summary.hasCreditedDeposit) {
+          next.push({
+            kind: "warn",
+            text: "Deposit is required before payouts can be requested.",
+          });
+        }
+        setStatus(next);
+      } catch {
+        /* keep whatever status we already have */
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [summary.hasCreditedDeposit]);
+
+  useRealtime({
+    onEvent: (event) => {
+      if (event.type === "onboarding.updated" || event.type === "deposit.updated") {
+        setStatus((current) => current);
+      }
+    },
+  });
 
   const balance = (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">
@@ -111,19 +176,21 @@ export function DashboardCards({ summary }: { summary: DashboardSummary }) {
         </div>
       </div>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Notifications</h2>
-        <ul className="mt-3 space-y-2">
-          {NOTIFICATIONS.map((note) => (
-            <li
-              key={note.text}
-              className={`rounded-lg border px-3 py-2 text-sm ${MESSAGE_TONE[note.kind]}`}
-            >
-              {note.text}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {status.length > 0 ? (
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Account status</h2>
+          <ul className="mt-3 space-y-2">
+            {status.map((note) => (
+              <li
+                key={note.text}
+                className={`rounded-lg border px-3 py-2 text-sm ${MESSAGE_TONE[note.kind]}`}
+              >
+                {note.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {depositOpen ? <DepositDialog onClose={() => setDepositOpen(false)} /> : null}
     </>

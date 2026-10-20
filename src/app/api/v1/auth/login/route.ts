@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authenticateUser, AuthError } from "@/lib/auth";
 import { SESSION_COOKIE, createSessionToken } from "@/lib/session";
+import { createSession } from "@/lib/sessions";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let body: { email?: string; password?: string };
@@ -16,7 +17,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const user = await authenticateUser(body.email, body.password);
-    const token = createSessionToken({ email: user.email, name: user.name, userId: user.id, role: user.role });
+    // The cookie references a server-side session row, so sign-out can revoke it.
+    const session = await createSession(user.id);
+    const token = createSessionToken({
+      email: user.email,
+      name: user.name,
+      userId: user.id,
+      role: user.role,
+      sid: session.sid,
+    });
     const response = NextResponse.json({ success: true, userId: user.id, role: user.role });
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,

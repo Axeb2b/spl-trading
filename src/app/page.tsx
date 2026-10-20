@@ -65,7 +65,7 @@ export default async function Home() {
   };
 
   return (
-    <CabinetShell title="Home" email={user.email} name={user.name}>
+    <CabinetShell title="Home" email={user.email} name={user.name} role={user.role}>
       <DashboardCards summary={summary} />
       <HomeStats counts={counts} />
     </CabinetShell>

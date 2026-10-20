@@ -4,6 +4,8 @@ import { queryAll } from "@/lib/db";
 import { approveWithdrawal, startProcessing, completeWithdrawal, rejectWithdrawal, WithdrawalError } from "@/lib/withdrawals";
 import { audit } from "@/lib/audit";
 import { isFeatureEnabled } from "@/lib/flags";
+import { emitEvent } from "@/lib/realtime/events";
+import { getWithdrawalById } from "@/lib/withdrawal-view";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
@@ -48,6 +50,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }
     await audit({ actorId: auth.user.id, actorRole: "admin", action: `withdrawal.${body.action}`, targetType: "withdrawal", targetId: body.withdrawalId });
+    // The owner sees the payout move without a reload.
+    const withdrawal = await getWithdrawalById(body.withdrawalId);
+    if (withdrawal) {
+      await emitEvent(withdrawal.userId, "withdrawal.updated", {
+        id: withdrawal.id,
+        status: withdrawal.status,
+      });
+      if (withdrawal.status === "completed") {
+        await emitEvent(withdrawal.userId, "overview.updated", { reason: "withdrawal_completed" });
+      }
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof WithdrawalError) {

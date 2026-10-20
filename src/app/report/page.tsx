@@ -38,7 +38,7 @@ export default async function ReportPage() {
   }));
 
   return (
-    <CabinetShell title="Report" email={user.email} name={user.name}>
+    <CabinetShell title="Report" email={user.email} name={user.name} role={user.role}>
       <ReportView rows={rows} />
     </CabinetShell>
   );

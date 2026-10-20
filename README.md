@@ -76,7 +76,9 @@ Deployment/DB-layer placeholders (`CLOUDFLARE_*`, D1 `database_id`) and Telegram
 | `npm run start` | Serve the production build (`next start`) |
 | `npm run lint` | ESLint check |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
-| `npm run check` | Full validation: lint + typecheck + build |
+| `npm test` | Unit tests (vitest) — IST/timezone maths and relative-time rules |
+| `npm run check:style` | Style guard: no external admin link, no demo copy, no hardcoded onboarding counter, no `toLocaleString` dates |
+| `npm run check` | Full validation: style + lint + typecheck + test + build |
 | `npm run seed:admin` | Create/seed the admin user into `data/spl.sqlite` |
 
 Cloudflare deployment tooling (`@opennextjs/cloudflare` + `wrangler`) is a dependency and is configured for the Cloudflare Workers deploy path; the exact deploy/preview commands are being finalized alongside the D1 migration — see [Deployment](#deployment).
@@ -84,17 +86,21 @@ Cloudflare deployment tooling (`@opennextjs/cloudflare` + `wrangler`) is a depen
 ## Testing / validation
 
 ```bash
-npm run check   # = npm run lint && npm run typecheck && npm run build
+npm run check   # = style + lint + typecheck + test + build
 ```
 
-There is no separate unit-test suite; `npm run check` is the gate.
+`npm test` runs the vitest suite in `tests/`. The timezone layer is covered by unit tests because
+it is pure arithmetic and easy to get subtly wrong: IST is a fixed +05:30 offset, so every
+conversion is exact and testable.
 
 ## Architecture
 
 - **Routing** — App Router under `src/app/`. Public auth pages live in `src/app/auth/*`; the cabinet (`/`, `/payins`, `/payouts`, `/accounts`, `/onboarding`, `/report`) and `/admin` are protected. API routes live under `src/app/api/v1/*`.
-- **Auth** — `src/lib/session.ts` signs/verifies the HMAC `spl_session` cookie. `src/proxy.ts` is the Next.js 16 route guard (middleware's successor here): it redirects anonymous users to `/auth/sign-in` and signed-in users away from the auth pages. Per-route authorization still happens in each API route.
+- **Auth** — `src/lib/session.ts` signs/verifies the HMAC `spl_session` cookie, and every session also has a row in the `sessions` table. The cookie references that row, so sign-out **revokes** access server-side instead of only clearing the browser's copy. `src/proxy.ts` is the Next.js 16 route guard (middleware's successor here): it redirects anonymous users to `/auth/sign-in` and signed-in users away from the auth pages, and it sets the security headers (CSP, HSTS, frame, referrer, permissions). Per-route authorization still happens in each API route.
+- **Timezone** — storage is UTC, display is **Asia/Kolkata (IST, UTC+05:30)**. `src/lib/time/ist.ts` owns the conversion; `src/lib/format.ts` formats every timestamp through it. Day boundaries, report ranges and exported filenames use IST calendar days. See [`docs/REALTIME-IST.md`](docs/REALTIME-IST.md).
+- **Realtime** — one multiplexed Server-Sent Events stream per client at `/api/v1/stream`, backed by the `events` table. Deposit and payout changes are announced by the mutation handlers themselves, so a state change and its notification cannot drift apart. The header indicator reports the real transport state instead of a static "Online" pill.
 - **Data layer** — `src/lib/db.ts` opens the SQLite database (`node:sqlite`) and exposes four helpers: `queryAll`, `queryOne`, `execute`, `withTransaction`. Feature code goes through these helpers rather than touching the driver directly.
-- **Migrations** — SQL files in `src/lib/migrations/` (`001_init.sql`, then `002_referral_rewards_unique.sql`), tracked in a `_migrations` table. The local SQLite driver applies them in order at first use (dev/test/build); D1 never self-migrates — apply with `npx wrangler d1 migrations apply spl` (`wrangler.jsonc` sets `migrations_dir: src/lib/migrations`, and the `deploy.yml` CI job runs the command before deploy). The seed script mirrors the same ordered list.
+- **Migrations** — SQL files in `src/lib/migrations/` (`001_init.sql`, `002_referral_rewards_unique.sql`, then `003_realtime_sessions.sql`), tracked in a `_migrations` table. The local SQLite driver applies them in order at first use (dev/test/build); D1 never self-migrates — apply with `npx wrangler d1 migrations apply spl` (`wrangler.jsonc` sets `migrations_dir: src/lib/migrations`, and the `deploy.yml` CI job runs the command before deploy). The seed script mirrors the same ordered list.
 
 ## Deployment
 
