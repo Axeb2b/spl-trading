@@ -40,14 +40,12 @@
     }
   ],
   // Application database (D1 — free tier, no card required).
-  // NOTE: `database_id` is a placeholder. Create the D1 database first, e.g.
-  //   npx wrangler d1 create spl
-  // then paste the returned id below before deploying.
+  // Created 2026-10-22 in APAC; `spl` on Cloudflare account 444aa87360f4c2f855671d7fcaccf00f.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "spl",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "18966a56-80ba-4128-bc3a-dbea4745bed7",
       "migrations_dir": "src/lib/migrations"
     }
   ]
