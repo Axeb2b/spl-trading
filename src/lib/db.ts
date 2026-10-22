@@ -38,6 +38,7 @@ const MIGRATION_FILES = [
   "001_init.sql",
   "002_referral_rewards_unique.sql",
   "003_realtime_sessions.sql",
+  "004_service_admin.sql",
 ];
 
 /**
