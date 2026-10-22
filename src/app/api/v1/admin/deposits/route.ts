@@ -3,7 +3,6 @@ import { requireAdmin } from "@/lib/api-auth";
 import { queryAll } from "@/lib/db";
 import { creditVerifiedDeposit, rejectDeposit, DepositError } from "@/lib/deposits";
 import { audit } from "@/lib/audit";
-import { isFeatureEnabled } from "@/lib/flags";
 import { emitAdminEvent, emitEvent } from "@/lib/realtime/events";
 import { getDepositOrderById } from "@/lib/deposits";
 
@@ -37,9 +36,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     if (body.action === "verify") {
-      if (!(await isFeatureEnabled("deposits_enabled"))) {
-        return NextResponse.json({ error: "Deposits feature is disabled." }, { status: 403 });
-      }
+      // Admin settlement is deliberately NOT gated by the customer-facing
+      // feature flag: pausing new deposits must never strand the review queue
+      // (or the Telegram bot, which settles through this same route).
       const result = await creditVerifiedDeposit({
         depositId: body.depositId,
         verifiedBy: auth.user.id,

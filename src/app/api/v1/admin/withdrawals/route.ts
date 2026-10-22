@@ -3,7 +3,6 @@ import { requireAdmin } from "@/lib/api-auth";
 import { queryAll } from "@/lib/db";
 import { approveWithdrawal, startProcessing, completeWithdrawal, rejectWithdrawal, WithdrawalError } from "@/lib/withdrawals";
 import { audit } from "@/lib/audit";
-import { isFeatureEnabled } from "@/lib/flags";
 import { emitAdminEvent, emitEvent } from "@/lib/realtime/events";
 import { getWithdrawalById } from "@/lib/withdrawal-view";
 
@@ -29,9 +28,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    if (!(await isFeatureEnabled("withdrawals_enabled"))) {
-      return NextResponse.json({ error: "Withdrawals feature is disabled." }, { status: 403 });
-    }
+    // Admin settlement is deliberately NOT gated by the customer-facing
+    // feature flag: pausing new withdrawals must never strand the review
+    // queue (or the Telegram bot, which settles through this same route).
     switch (body.action) {
       case "approve":
         await approveWithdrawal(body.withdrawalId, auth.user.id);
