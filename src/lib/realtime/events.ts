@@ -35,6 +35,31 @@ export async function emitEvent(
   ]);
 }
 
+/**
+ * Fans an admin-queue event out to every active admin.
+ *
+ * The stream is keyed by user id, so a queue event is one row per admin:
+ * a shared `user_id = NULL` row would be readable by nobody. The console
+ * watches this type to refresh its pending counts without polling every tab.
+ */
+export async function emitAdminEvent(
+  type: AppEventType,
+  payload: Record<string, unknown> = {},
+): Promise<void> {
+  const admins = await queryAll<{ id: string }>(
+    "SELECT id FROM users WHERE role = 'admin' AND status = 'active'",
+  );
+  if (admins.length === 0) return;
+  const createdAt = nowIso();
+  const body = JSON.stringify(payload);
+  const placeholders = admins.map(() => "(?, ?, ?, ?)").join(", ");
+  const values = admins.flatMap((admin) => [admin.id, type, body, createdAt]);
+  await execute(
+    `INSERT INTO events (user_id, type, payload, created_at) VALUES ${placeholders}`,
+    values,
+  );
+}
+
 function safeParse(value: string): unknown {
   try {
     return JSON.parse(value) as unknown;

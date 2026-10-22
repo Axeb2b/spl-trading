@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, CircleDashed, HelpCircle, Percent } from "lucide-react";
-import { useRealtime } from "@/hooks/use-realtime";
+import { useCabinetRealtime } from "./realtime-context";
 
 type StepStatus = "complete" | "current" | "available";
 
@@ -57,11 +57,14 @@ export function OnboardingView() {
 
   useEffect(() => load(), [load]);
 
-  useRealtime({
-    onEvent: (event) => {
-      if (event.type === "onboarding.updated") void load();
-    },
-  });
+  const { subscribe } = useCabinetRealtime();
+  useEffect(
+    () =>
+      subscribe((event) => {
+        if (event.type === "onboarding.updated") void load();
+      }),
+    [load, subscribe],
+  );
 
   if (error) {
     return (

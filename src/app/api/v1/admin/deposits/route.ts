@@ -4,7 +4,7 @@ import { queryAll } from "@/lib/db";
 import { creditVerifiedDeposit, rejectDeposit, DepositError } from "@/lib/deposits";
 import { audit } from "@/lib/audit";
 import { isFeatureEnabled } from "@/lib/flags";
-import { emitEvent } from "@/lib/realtime/events";
+import { emitAdminEvent, emitEvent } from "@/lib/realtime/events";
 import { getDepositOrderById } from "@/lib/deposits";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (order) {
         await emitEvent(order.userId, "deposit.updated", { id: order.id, status: order.status });
         await emitEvent(order.userId, "overview.updated", { reason: "deposit_credited" });
+        await emitAdminEvent("admin.queue.updated", { queue: "deposits", id: order.id, status: order.status, action: "verify" });
       }
       return NextResponse.json({ success: true, alreadyCredited: result.alreadyCredited });
     }
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const rejected = await getDepositOrderById(body.depositId);
       if (rejected) {
         await emitEvent(rejected.userId, "deposit.updated", { id: rejected.id, status: rejected.status });
+        await emitAdminEvent("admin.queue.updated", { queue: "deposits", id: rejected.id, status: rejected.status, action: "reject" });
       }
       return NextResponse.json({ success: true });
     }

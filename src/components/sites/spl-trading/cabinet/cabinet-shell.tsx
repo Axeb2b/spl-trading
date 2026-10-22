@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, LogOut, Menu, User, X } from "lucide-react";
@@ -8,6 +8,7 @@ import { ADMIN_NAV_ITEM, NAV_ITEMS } from "./nav-items";
 import { ThemeToggle } from "../theme-toggle";
 import { LiveIndicator } from "../live-indicator";
 import { useRealtime } from "@/hooks/use-realtime";
+import { RealtimeContext, type RealtimeListener } from "./realtime-context";
 import { formatIst } from "@/lib/time/ist";
 
 type CabinetShellProps = {
@@ -69,6 +70,16 @@ export function CabinetShell({ title, email, name, role = "user", children }: Ca
       .then((data: OnboardingState | null) => data);
   }, []);
 
+  // One stream per page: the shell owns the connection and fans each event
+  // out to the live surfaces that subscribed to it.
+  const listenersRef = useRef(new Set<RealtimeListener>());
+  const subscribe = useCallback((listener: RealtimeListener) => {
+    listenersRef.current.add(listener);
+    return () => {
+      listenersRef.current.delete(listener);
+    };
+  }, []);
+
   const { state } = useRealtime({
     onEvent: (event) => {
       if (
@@ -83,8 +94,17 @@ export function CabinetShell({ title, email, name, role = "user", children }: Ca
           if (data) setOnboarding(data);
         }).catch(() => undefined);
       }
+      for (const listener of listenersRef.current) {
+        try {
+          listener(event);
+        } catch {
+          /* a broken subscriber must not stop the others */
+        }
+      }
     },
   });
+
+  const realtimeValue = useMemo(() => ({ state, subscribe }), [state, subscribe]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,8 +155,9 @@ export function CabinetShell({ title, email, name, role = "user", children }: Ca
   const setupIncomplete = onboarding !== null && onboarding.completed < onboarding.total;
 
   return (
-    <>
-      <a
+    <RealtimeContext.Provider value={realtimeValue}>
+      <>
+        <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:text-white"
       >
@@ -333,6 +354,7 @@ export function CabinetShell({ title, email, name, role = "user", children }: Ca
           </Link>
         ))}
       </nav>
-    </>
+      </>
+    </RealtimeContext.Provider>
   );
 }

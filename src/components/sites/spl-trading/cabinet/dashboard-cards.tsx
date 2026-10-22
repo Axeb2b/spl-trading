@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Wallet, TrendingUp, ArrowLeftRight, Lock } from "lucide-react";
 import { DepositDialog } from "./deposit-dialog";
 import { StatCard } from "@/components/ui/stat-card";
 import { formatUsd } from "@/lib/format";
-import { useRealtime } from "@/hooks/use-realtime";
+import { useCabinetRealtime } from "./realtime-context";
 
 const MESSAGE_TONE: Record<string, string> = {
   info: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200",
@@ -31,6 +32,10 @@ export function DashboardCards({ summary }: { summary: DashboardSummary }) {
   const [status, setStatus] = useState<AccountStatus[]>([]);
   // Real state, not decoration: the lock clears once a deposit is credited.
   const locked = !summary.hasCreditedDeposit;
+
+  const router = useRouter();
+  const { subscribe } = useCabinetRealtime();
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,15 +86,18 @@ export function DashboardCards({ summary }: { summary: DashboardSummary }) {
     return () => {
       cancelled = true;
     };
-  }, [summary.hasCreditedDeposit]);
+  }, [summary.hasCreditedDeposit, reloadToken]);
 
-  useRealtime({
-    onEvent: (event) => {
-      if (event.type === "onboarding.updated" || event.type === "deposit.updated") {
-        setStatus((current) => current);
-      }
-    },
-  });
+  useEffect(
+    () =>
+      subscribe((event) => {
+        if (event.type !== "onboarding.updated" && event.type !== "deposit.updated") return;
+        setReloadToken((token) => token + 1);
+        // The balance/stat numbers come from the server component.
+        router.refresh();
+      }),
+    [router, subscribe],
+  );
 
   const balance = (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">

@@ -4,7 +4,7 @@ import { queryAll } from "@/lib/db";
 import { approveWithdrawal, startProcessing, completeWithdrawal, rejectWithdrawal, WithdrawalError } from "@/lib/withdrawals";
 import { audit } from "@/lib/audit";
 import { isFeatureEnabled } from "@/lib/flags";
-import { emitEvent } from "@/lib/realtime/events";
+import { emitAdminEvent, emitEvent } from "@/lib/realtime/events";
 import { getWithdrawalById } from "@/lib/withdrawal-view";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -60,6 +60,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (withdrawal.status === "completed") {
         await emitEvent(withdrawal.userId, "overview.updated", { reason: "withdrawal_completed" });
       }
+      await emitAdminEvent("admin.queue.updated", {
+        queue: "withdrawals",
+        id: withdrawal.id,
+        status: withdrawal.status,
+        action: body.action,
+      });
     }
     return NextResponse.json({ success: true });
   } catch (err) {
